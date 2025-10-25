@@ -6,54 +6,86 @@ This knowledge base documents our exploration of Theia architecture and the visi
 
 Start here: [[Project Vision - Knowledge-First IDE]]
 
-## Core Architecture Concepts
+## 📁 Directory Structure
+
+```
+knowledge-base/
+├── Project Vision/     - Core vision and goals
+├── Architecture/       - Theia fundamentals and components
+├── Patterns/          - Design patterns and concepts
+├── Features/          - Knowledge management features
+├── Implementation/    - Implementation guides
+├── Reference/         - External project analysis
+└── Meta/             - Project meta-documentation
+```
+
+## 🎯 Project Vision
+
+Core concept and goals for the knowledge-first IDE:
+
+- [[Project Vision - Knowledge-First IDE]]
+- [[Natural Language Developers]]
+- [[Obsidian-Like Experience]]
+- [[Progressive Disclosure Pattern]]
+
+## 🏗️ Architecture
 
 ### Theia Fundamentals
 - [[Next.js vs Theia Architecture]]
-- [[Theia Application Shell]]
-- [[Widget System]]
 - [[Dependency Injection in Theia]]
 - [[Frontend and Backend Communication]]
 - [[Monorepo Structure]]
 
-### UI Components
+### Core Components
+- [[Theia Application Shell]]
+- [[Widget System]]
 - [[Activity Bar]]
 - [[View Containers]]
 - [[Side Panel Handlers]]
-
-### Opening and Handling Files
-- [[OpenHandler Priority System]]
-- [[OpenerService]]
 - [[URI Schemes in Theia]]
 
-### Advanced Patterns
-- [[Diff Editor Architecture]]
-- [[Composite vs Separate Widget Patterns]]
+## 🎨 Patterns & Concepts
+
+Design patterns used throughout the application:
+
 - [[Single-Document vs Multiple-Document Mode]]
 - [[Rank and Priority in Side Panels]]
+- [[Composite vs Separate Widget Patterns]]
+- [[Diff Editor Architecture]]
 
-## Project Vision
+## ✨ Knowledge Features
 
-### Knowledge-First IDE Concept
-- [[Project Vision - Knowledge-First IDE]]
-- [[Progressive Disclosure Pattern]]
-- [[Natural Language Developers]]
-- [[Obsidian-Like Experience]]
+Core features that make this a knowledge-first IDE:
 
-### Core Features
 - [[Wiki Links]]
 - [[Backlinks Panel]]
 - [[Knowledge Graph View]]
 - [[Quick Switcher]]
 - [[Daily Notes]]
-- [[WYSIWYG Markdown Editor]]
 - [[Tags System]]
+- [[WYSIWYG Markdown Editor]]
 
-### Reference Projects
+## 🛠️ Implementation
+
+Guides for implementing key functionality:
+
+- [[OpenerService]]
+- [[OpenHandler Priority System]]
+
+## 📚 Reference
+
+Analysis of related projects:
+
 - [[Foam Project Analysis]]
 
-## Meta
+## 📋 Meta
 
-- [[Conversation Index]]
-- [[Open Questions]]
-- [[Next Steps]]
+Project documentation and planning:
+
+- [[Conversation Index]] - Complete conversation history
+- [[Open Questions]] - Decisions to be made
+- [[Next Steps]] - 14-week implementation roadmap
+
+---
+
+**Note:** All documents use wiki-link syntax (`[[Document Name]]`) for cross-referencing. The links work regardless of folder location.
