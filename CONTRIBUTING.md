@@ -1,123 +1,92 @@
-# Contributing to Eclipse Theia
+# Contributing to Quallaa
 
-Theia is a young open-source project with a modular architecture. One of the
-goals is to make sure that we can customize and enhance any Theia application
-through extensions.  So while the main Theia repository contains some common
-functionality for IDE-like applications, like a file system or a navigator
-view, most functionality doesn't necessarily need to be put into the core
-repository but can be developed separately.
+Thank you for your interest in contributing to Quallaa! We welcome contributions from the community.
 
-## How Can I Contribute?
+## About Quallaa
 
-In the following some of the typical ways of contribution are described.
+Quallaa is a knowledge-first IDE built on Eclipse Theia. Our goal is to create a tool that puts knowledge management first, with code execution capabilities progressively disclosed as needed.
 
-### Asking Questions
+## License
 
-It's totally fine to ask questions by opening an issue in the Theia GitHub
-repository. We will close it once it's answered and tag it with the 'question'
-label. Please check if the question has been asked before there or on [Stack
-Overflow](https://stackoverflow.com).
+Quallaa is licensed under the Eclipse Public License 2.0 (EPL-2.0). By contributing to this project, you agree that your contributions will be licensed under the same license.
+
+## How to Contribute
 
 ### Reporting Bugs
 
-If you have found a bug, you should first check if it has already been filed
-and maybe even fixed. If you find an existing unresolved issue, please add your
-case. If you could not find an existing bug report, please file a new one. In
-any case, please add all information you can share and that will help to
-reproduce and solve the problem.
+If you find a bug, please open an issue with:
+- A clear, descriptive title
+- Steps to reproduce the issue
+- Expected behavior
+- Actual behavior
+- Your environment (OS, Node version, etc.)
 
-### Reporting Feature Requests
+### Suggesting Enhancements
 
-You may want to see a feature or have an idea. You can file a request and we
-can discuss it.  If such a feature request already exists, please add a comment
-or some other form of feedback to indicate you are interested too. Also in this
-case any concrete use case scenario is appreciated to understand the motivation
-behind it.
+We welcome feature suggestions! Please open an issue with:
+- A clear description of the enhancement
+- Why this would be useful
+- Any implementation ideas you have
 
 ### Pull Requests
 
-Before you get started investing significant time in something you want to get
-merged and maintained as part of Theia, you should talk with the team through
-an issue. Simply choose the issue you would want to work on, and tell everyone
-that you are willing to do so and how you would approach it. The team will be
-happy to guide you and give feedback.
+We welcome pull requests! Here's the process:
 
-We follow the contributing and reviewing pull request guidelines described
-[here](https://github.com/eclipse-theia/theia/blob/master/doc/pull-requests.md).
+1. **Fork the repository** and create your branch from `master`
+2. **Make your changes**
+   - Follow the existing code style
+   - Add tests if applicable
+   - Update documentation as needed
+3. **Test your changes**
+   ```sh
+   yarn && yarn build:dev
+   yarn browser start  # Test in browser
+   ```
+4. **Commit your changes**
+   - Use clear, descriptive commit messages
+   - Reference any related issues
+   - Sign your commits with `git commit -s`
+5. **Push to your fork** and submit a pull request
 
-## Coding Guidelines
+### Development Setup
 
-We follow the coding guidelines described
-[here](https://github.com/eclipse-theia/theia/wiki/Coding-Guidelines).
+See the [README](README.md) for development setup instructions.
 
-## Eclipse Contributor Agreement
+### Code Style
 
-Before your contribution can be accepted by the project team contributors must
-electronically sign the Eclipse Contributor Agreement (ECA).
+- Follow existing code patterns
+- Use TypeScript for type safety
+- Write meaningful comments for complex logic
+- Keep functions focused and small
 
-* https://www.eclipse.org/legal/ECA.php
+## Sign Your Work
 
-Commits that are provided by non-committers must have a Signed-off-by field in
-the footer indicating that the author is aware of the terms by which the
-contribution has been provided to the project. The non-committer must
-additionally have an Eclipse Foundation account and must have a signed Eclipse
-Contributor Agreement (ECA) on file.
+By signing your commits, you certify that you wrote the code or have the right to submit it under the EPL-2.0 license.
 
-For more information, please see the Eclipse Committer Handbook:
-https://www.eclipse.org/projects/handbook/#resources-commit
-
-## Sign your work
-
-The sign-off is a simple line at the end of the explanation for the patch. Your
-signature certifies that you wrote the patch or otherwise have the right to
-pass it on as an open-source patch. The rules are pretty simple: if you can
-certify the below (from
-[developercertificate.org](https://developercertificate.org/)):
+Add a line to every git commit message:
 
 ```
-Developer Certificate of Origin
-Version 1.1
-
-Copyright (C) 2004, 2006 The Linux Foundation and its contributors.
-1 Letterman Drive
-Suite D4700
-San Francisco, CA, 94129
-
-Everyone is permitted to copy and distribute verbatim copies of this
-license document, but changing it is not allowed.
-
-Developer's Certificate of Origin 1.1
-
-By making a contribution to this project, I certify that:
-
-(a) The contribution was created in whole or in part by me and I
-    have the right to submit it under the open source license
-    indicated in the file; or
-
-(b) The contribution is based upon previous work that, to the best
-    of my knowledge, is covered under an appropriate open source
-    license and I have the right under that license to submit that
-    work with modifications, whether created in whole or in part
-    by me, under the same open source license (unless I am
-    permitted to submit under a different license), as indicated
-    in the file; or
-
-(c) The contribution was provided directly to me by some other
-    person who certified (a), (b) or (c) and I have not modified
-    it.
-
-(d) I understand and agree that this project and the contribution
-    are public and that a record of the contribution (including all
-    personal information I submit with it, including my sign-off) is
-    maintained indefinitely and may be redistributed consistent with
-    this project or the open source license(s) involved.
+Signed-off-by: Your Name <your.email@example.com>
 ```
 
-Then you just add a line to every git commit message:
+Use your real name (no pseudonyms or anonymous contributions).
 
-    Signed-off-by: Joe Smith <joe.smith@email.com>
+If you set your `user.name` and `user.email` git configs, you can sign commits automatically:
+```sh
+git commit -s
+```
 
-Use your real name (sorry, no pseudonyms or anonymous contributions.)
+## Community Guidelines
 
-If you set your `user.name` and `user.email` git configs, you can sign your
-commit automatically with `git commit -s`.
+- Be respectful and constructive
+- Help others when you can
+- Focus on the problem, not the person
+- Assume good faith
+
+## Questions?
+
+If you have questions about contributing, feel free to open an issue.
+
+## Recognition
+
+Contributors will be recognized in our release notes. Thank you for helping make Quallaa better!
