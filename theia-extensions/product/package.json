@@ -1,8 +1,8 @@
 {
   "private": true,
-  "name": "theia-ide-product-ext",
+  "name": "quallaa-product-ext",
   "version": "1.65.100",
-  "description": "Eclipse Theia IDE Product Branding",
+  "description": "Quallaa Product Branding",
   "dependencies": {
     "@theia/core": "1.65.1",
     "@theia/getting-started": "1.65.1",
@@ -24,15 +24,15 @@
   "keywords": [
     "theia-extension"
   ],
-  "license": "MIT",
+  "license": "EPL-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/eclipse-theia/theia-ide.git"
+    "url": "https://github.com/jefftoffoli/Quallaa-app.git"
   },
   "bugs": {
-    "url": "https://github.com/eclipse-theia/theia-ide/issues"
+    "url": "https://github.com/jefftoffoli/Quallaa-app/issues"
   },
-  "homepage": "https://github.com/eclipse-theia/theia-ide",
+  "homepage": "https://github.com/jefftoffoli/Quallaa-app",
   "files": [
     "lib",
     "src"
