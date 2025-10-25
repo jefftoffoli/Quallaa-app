@@ -84,11 +84,13 @@ yarn package:applications
 
 ## License
 
-Copyright (c) 2025 Jeff Toffoli. All Rights Reserved.
+Copyright (c) 2025 Jeff Toffoli
 
-This is proprietary software. See [LICENSE](LICENSE) for details.
+Quallaa is open source software licensed under the [Eclipse Public License 2.0](LICENSE) (EPL-2.0).
 
-Quallaa is based on Eclipse Theia, which is licensed under the Eclipse Public License 2.0. Theia platform components retain their original license. All Quallaa-specific modifications and extensions are proprietary.
+This project is a fork of Eclipse Theia, which is also licensed under EPL-2.0. Both the original Theia components and Quallaa-specific modifications are available under the same EPL-2.0 license, enabling both open source and commercial use.
+
+See [LICENSE](LICENSE) for full license text.
 
 ---
 
