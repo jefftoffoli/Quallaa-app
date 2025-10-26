@@ -1,10 +1,18 @@
 /********************************************************************************
+ * Copyright (C) 2025 Jeff Toffoli
  * Copyright (C) 2020 EclipseSource and others.
  *
  * This program and the accompanying materials are made available under the
- * terms of the MIT License, which is available in the project root.
+ * terms of the Eclipse Public License v. 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0.
  *
- * SPDX-License-Identifier: MIT
+ * This Source Code may also be made available under the following Secondary
+ * Licenses when the conditions for such availability set forth in the Eclipse
+ * Public License v. 2.0 are satisfied: GNU General Public License, version 2
+ * with the GNU Classpath Exception which is available at
+ * https://www.gnu.org/software/classpath/license.html.
+ *
+ * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0
  ********************************************************************************/
 
 import * as React from 'react';
@@ -13,7 +21,8 @@ import { Message } from '@theia/core/lib/browser';
 import { PreferenceService } from '@theia/core/lib/common';
 import { inject, injectable } from '@theia/core/shared/inversify';
 import {
-    renderDocumentation, renderDownloads, renderExtendingCustomizing, renderSourceCode, renderSupport, renderTickets, renderWhatIs, renderCollaboration
+    renderDocumentation, renderDownloads, renderExtendingCustomizing, renderSourceCode, renderTickets, renderWhatIs, renderCollaboration,
+    renderWhoIsThisFor, renderKeyFeatures
 } from './branding-util';
 
 import { GettingStartedWidget } from '@theia/getting-started/lib/browser/getting-started-widget';
@@ -71,12 +80,22 @@ export class TheiaIDEGettingStartedWidget extends GettingStartedWidget {
                 </div>
                 <div className='flex-grid'>
                     <div className='col'>
-                        {renderExtendingCustomizing(this.windowService)}
+                        {renderWhoIsThisFor(this.windowService)}
                     </div>
                 </div>
                 <div className='flex-grid'>
                     <div className='col'>
-                        {renderSupport(this.windowService)}
+                        {renderKeyFeatures(this.windowService)}
+                    </div>
+                </div>
+                <div className='flex-grid'>
+                    <div className='col'>
+                        {this.renderAIBanner()}
+                    </div>
+                </div>
+                <div className='flex-grid'>
+                    <div className='col'>
+                        {renderExtendingCustomizing(this.windowService)}
                     </div>
                 </div>
                 <div className='flex-grid'>
@@ -92,11 +111,6 @@ export class TheiaIDEGettingStartedWidget extends GettingStartedWidget {
                 <div className='flex-grid'>
                     <div className='col'>
                         {renderDocumentation(this.windowService)}
-                    </div>
-                </div>
-                <div className='flex-grid'>
-                    <div className='col'>
-                        {this.renderAIBanner()}
                     </div>
                 </div>
                 <div className='flex-grid'>
@@ -143,7 +157,8 @@ export class TheiaIDEGettingStartedWidget extends GettingStartedWidget {
 
     protected renderHeader(): React.ReactNode {
         return <div className='gs-header'>
-            <h1>Eclipse Theia <span className='gs-blue-header'>IDE</span></h1>
+            <h1>Quallaa</h1>
+            <p className='gs-sub-header gs-tagline'>Where knowledge becomes executable</p>
             {this.renderVersion()}
         </div>;
     }

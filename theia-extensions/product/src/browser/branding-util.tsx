@@ -1,10 +1,18 @@
 /********************************************************************************
+ * Copyright (C) 2025 Jeff Toffoli
  * Copyright (C) 2020 EclipseSource and others.
  *
  * This program and the accompanying materials are made available under the
- * terms of the MIT License, which is available in the project root.
+ * terms of the Eclipse Public License v. 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0.
  *
- * SPDX-License-Identifier: MIT
+ * This Source Code may also be made available under the following Secondary
+ * Licenses when the conditions for such availability set forth in the Eclipse
+ * Public License v. 2.0 are satisfied: GNU General Public License, version 2
+ * with the GNU Classpath Exception which is available at
+ * https://www.gnu.org/software/classpath/license.html.
+ *
+ * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0
  ********************************************************************************/
 
 import { WindowService } from '@theia/core/lib/browser/window/window-service';
@@ -30,17 +38,38 @@ function BrowserLink(props: ExternalBrowserLinkProps): JSX.Element {
 export function renderWhatIs(windowService: WindowService): React.ReactNode {
     return <div className='gs-section'>
         <h3 className='gs-section-header'>
-            What is this?
+            What is Quallaa?
         </h3>
         <div>
-            The Eclipse Theia IDE is a modern and open IDE for cloud and desktop. The Theia IDE is based on the <BrowserLink text="Theia platform"
-            url="https://theia-ide.org" windowService={windowService} ></BrowserLink>.
+            Quallaa is a <span className='gs-text-bold'>knowledge-first IDE</span> for natural language developers.
+            Think in markdown, organize with wiki-style linking, and execute code when you need to.
         </div>
         <div>
-            The IDE is available as a <BrowserLink text="downloadable desktop application" url="https://theia-ide.org//#theiaidedownload"
-            windowService={windowService} ></BrowserLink>. You can also <BrowserLink text="try the latest version of the Theia IDE online"
-            url="https://try.theia-cloud.io/" windowService={windowService} ></BrowserLink>. The online test version is limited to 30 minutes per session and hosted
-            via <BrowserLink text="Theia Cloud" url="https://theia-cloud.io/" windowService={windowService} ></BrowserLink>.
+            Built on the <BrowserLink text="Eclipse Theia platform" url="https://theia-ide.org" windowService={windowService} />,
+            Quallaa combines the knowledge graph experience of Obsidian with the full power of a modern IDE.
+        </div>
+        <div>
+            <span className='gs-text-bold'>Where knowledge becomes executable.</span>
+        </div>
+    </div>;
+}
+
+export function renderWhoIsThisFor(windowService: WindowService): React.ReactNode {
+    return <div className='gs-section'>
+        <h3 className='gs-section-header'>
+            Who is this for?
+        </h3>
+        <div>
+            Quallaa is designed for <span className='gs-text-bold'>natural language developers</span>—people who:
+        </div>
+        <ul>
+            <li>Think and work primarily in markdown and natural language</li>
+            <li>Use AI to assist with coding (Claude, ChatGPT, etc.)</li>
+            <li>Prefer knowledge graphs over file trees</li>
+            <li>Want Obsidian-like note-taking with real IDE capabilities</li>
+        </ul>
+        <div>
+            Technical writers, researchers, product managers, and AI-assisted developers will feel right at home.
         </div>
     </div>;
 }
@@ -48,30 +77,36 @@ export function renderWhatIs(windowService: WindowService): React.ReactNode {
 export function renderExtendingCustomizing(windowService: WindowService): React.ReactNode {
     return <div className='gs-section'>
         <h3 className='gs-section-header'>
-            Extending/Customizing the Theia IDE
+            Extending Quallaa
         </h3>
         <div >
-            You can extend the Theia IDE at runtime by installing VS Code extensions, e.g. from the <BrowserLink text="OpenVSX registry" url="https://open-vsx.org/"
-            windowService={windowService} ></BrowserLink>, an open marketplace for VS Code extensions. Just open the extension view or browse <BrowserLink
-            text="OpenVSX online" url="https://open-vsx.org/" windowService={windowService} ></BrowserLink>.
+            You can extend Quallaa at runtime by installing VS Code extensions from the <BrowserLink text="OpenVSX registry"
+            url="https://open-vsx.org/" windowService={windowService} />, an open marketplace for VS Code extensions.
+            Just open the extension view or browse <BrowserLink text="OpenVSX online" url="https://open-vsx.org/"
+            windowService={windowService} />.
         </div>
         <div>
-            Furthermore, the Theia IDE is based on the flexible Theia platform. Therefore, the Theia IDE can serve as a <span className='gs-text-bold'>template</span> for building
-            custom tools and IDEs. Browse <BrowserLink text="the documentation" url="https://theia-ide.org/docs/composing_applications/"
-            windowService={windowService} ></BrowserLink> to help you customize and build your own Eclipse Theia-based product.
+            Quallaa is built on the Eclipse Theia platform and is open source (EPL-2.0). You can customize and fork it
+            to build your own knowledge-first tools.
         </div>
     </div>;
 }
 
-export function renderSupport(windowService: WindowService): React.ReactNode {
+export function renderKeyFeatures(windowService: WindowService): React.ReactNode {
     return <div className='gs-section'>
         <h3 className='gs-section-header'>
-            Professional Support
+            Key Features (Planned)
         </h3>
+        <ul>
+            <li><span className='gs-text-bold'>Wiki-style linking</span> - [[Link between notes]] with autocomplete</li>
+            <li><span className='gs-text-bold'>Backlinks panel</span> - See what links to your current note</li>
+            <li><span className='gs-text-bold'>Knowledge graph</span> - Visualize connections between your notes</li>
+            <li><span className='gs-text-bold'>WYSIWYG markdown</span> - Edit markdown visually, not just in source</li>
+            <li><span className='gs-text-bold'>Daily notes</span> - Quick-capture system for organizing your day</li>
+            <li><span className='gs-text-bold'>Progressive disclosure</span> - IDE features appear when you need them</li>
+        </ul>
         <div>
-            Professional support, implementation services, consulting and training for building tools like Theia IDE and for building other tools based on Eclipse Theia is
-            available by selected companies as listed on the <BrowserLink text=" Theia support page" url="https://theia-ide.org/support/"
-            windowService={windowService} ></BrowserLink>.
+            Plus all the power of a full IDE: debugging, git integration, terminal, and extension support.
         </div>
     </div>;
 }
@@ -79,20 +114,14 @@ export function renderSupport(windowService: WindowService): React.ReactNode {
 export function renderTickets(windowService: WindowService): React.ReactNode {
     return <div className='gs-section'>
         <h3 className='gs-section-header'>
-            Reporting feature requests and bugs
+            Reporting Issues & Feature Requests
         </h3>
         <div >
-            The features in the Eclipse Theia IDE are based on Theia and the included
-            extensions/plugins. For bugs in Theia please consider opening an issue in
-            the <BrowserLink text="Theia project on Github" url="https://github.com/eclipse-theia/theia/issues/new/choose"
-                windowService={windowService} ></BrowserLink>.
+            Found a bug or have a feature idea? Please <BrowserLink text="open an issue on GitHub"
+            url="https://github.com/jefftoffoli/Quallaa-app/issues/new" windowService={windowService} />.
         </div>
         <div>
-            Eclipse Theia IDE only packages existing functionality into a product and installers
-            for the product. If you believe there is a mistake in packaging, something needs to be added to the
-            packaging or the installers do not work properly,
-            please <BrowserLink text="open an issue on Github" url="https://github.com/eclipse-theia/theia-ide/issues/new/choose"
-                windowService={windowService} ></BrowserLink> to let us know.
+            Quallaa is in early development. Your feedback helps shape the future of the knowledge-first IDE.
         </div>
     </div>;
 }
@@ -103,9 +132,13 @@ export function renderSourceCode(windowService: WindowService): React.ReactNode 
             Source Code
         </h3>
         <div >
-            The source code of Eclipse Theia IDE is available
-            on <BrowserLink text="Github" url="https://github.com/eclipse-theia/theia-ide"
-                windowService={windowService} ></BrowserLink>.
+            Quallaa is open source under the EPL-2.0 license. The source code is available
+            on <BrowserLink text="GitHub" url="https://github.com/jefftoffoli/Quallaa-app"
+            windowService={windowService} />.
+        </div>
+        <div>
+            Contributions are welcome! See our <BrowserLink text="Contributing Guide"
+            url="https://github.com/jefftoffoli/Quallaa-app/blob/master/CONTRIBUTING.md" windowService={windowService} /> for details.
         </div>
     </div>;
 }
@@ -116,8 +149,13 @@ export function renderDocumentation(windowService: WindowService): React.ReactNo
             Documentation
         </h3>
         <div >
-            Please see the <BrowserLink text="documentation" url="https://theia-ide.org/docs/user_getting_started/"
-            windowService={windowService} ></BrowserLink> on how to use the Theia IDE.
+            Documentation is currently being developed. For now, see the <BrowserLink text="README"
+            url="https://github.com/jefftoffoli/Quallaa-app#readme" windowService={windowService} /> for
+            getting started information.
+        </div>
+        <div>
+            Quallaa is built on Eclipse Theia. For platform documentation, see the <BrowserLink text="Theia docs"
+            url="https://theia-ide.org/docs/" windowService={windowService} />.
         </div>
     </div>;
 }
@@ -143,12 +181,12 @@ export function renderDownloads(): React.ReactNode {
             Updates and Downloads
         </h3>
         <div className='gs-action-container'>
-            You can update Eclipse Theia IDE directly in this application by navigating to
-            File {'>'} Preferences {'>'} Check for Updates… Moreover the application will check for updates
+            You can update Quallaa directly in this application by navigating to
+            File {'>'} Preferences {'>'} Check for Updates… The application will also check for updates
             after each launch automatically.
         </div>
         <div className='gs-action-container'>
-            Alternatively you can download the most recent version from the download page.
+            Download the latest version from the <a href="https://github.com/jefftoffoli/Quallaa-app/releases">GitHub Releases page</a>.
         </div>
     </div>;
 }

@@ -1,16 +1,24 @@
 /********************************************************************************
+ * Copyright (C) 2025 Jeff Toffoli
  * Copyright (C) 2020 EclipseSource and others.
  *
  * This program and the accompanying materials are made available under the
- * terms of the MIT License, which is available in the project root.
+ * terms of the Eclipse Public License v. 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0.
  *
- * SPDX-License-Identifier: MIT
+ * This Source Code may also be made available under the following Secondary
+ * Licenses when the conditions for such availability set forth in the Eclipse
+ * Public License v. 2.0 are satisfied: GNU General Public License, version 2
+ * with the GNU Classpath Exception which is available at
+ * https://www.gnu.org/software/classpath/license.html.
+ *
+ * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0
  ********************************************************************************/
 
 import * as React from 'react';
 import { AboutDialog, AboutDialogProps, ABOUT_CONTENT_CLASS } from '@theia/core/lib/browser/about-dialog';
 import { injectable, inject } from '@theia/core/shared/inversify';
-import { renderDocumentation, renderDownloads, renderSourceCode, renderSupport, renderTickets, renderWhatIs } from './branding-util';
+import { renderDocumentation, renderDownloads, renderSourceCode, renderTickets, renderWhatIs, renderKeyFeatures } from './branding-util';
 import { VSXEnvironment } from '@theia/vsx-registry/lib/common/vsx-environment';
 import { WindowService } from '@theia/core/lib/browser/window/window-service';
 
@@ -58,7 +66,7 @@ export class TheiaIDEAboutDialog extends AboutDialog {
             </div>
             <div className='flex-grid'>
                 <div className='col'>
-                    {renderSupport(this.windowService)}
+                    {renderKeyFeatures(this.windowService)}
                 </div>
             </div>
             <div className='flex-grid'>
@@ -87,7 +95,8 @@ export class TheiaIDEAboutDialog extends AboutDialog {
 
     protected renderTitle(): React.ReactNode {
         return <div className='gs-header'>
-            <h1>Eclipse Theia <span className='gs-blue-header'>IDE</span></h1>
+            <h1>Quallaa</h1>
+            <p className='gs-sub-header gs-tagline'>Where knowledge becomes executable</p>
             {this.renderVersion()}
         </div>;
     }
