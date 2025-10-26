@@ -5,7 +5,8 @@ module.exports = {
         './configs/base.eslintrc.json',
         './configs/warnings.eslintrc.json',
         './configs/errors.eslintrc.json',
-        './configs/xss.eslintrc.json'
+        './configs/xss.eslintrc.json',
+        './configs/react.eslintrc.json'
     ],
     ignorePatterns: [
         '**/{node_modules,lib}',

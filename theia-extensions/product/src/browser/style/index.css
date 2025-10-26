@@ -8,15 +8,29 @@
  ********************************************************************************/
 
 :root {
-    --theia-branding-logo: url(../icons/TheiaIDE.png);
+    /* Default logo for light theme */
+    --theia-branding-logo: url(../icons/quallaa-logo-light.png);
+    --theia-branding-logo-square: url(../icons/quallaa-logo-square-512.png);
+}
+
+/* Dark theme: use light-colored logo on dark background */
+body.theia-dark,
+body.theia-hc {
+    --theia-branding-logo: url(../icons/quallaa-logo-dark.png);
+}
+
+/* Light theme: use dark-colored logo on light background */
+body.theia-light,
+body.theia-hcLight {
+    --theia-branding-logo: url(../icons/quallaa-logo-light.png);
 }
 
 .theia-icon {
-    background-image: url("../icons/512-512.png");
+    background-image: var(--theia-branding-logo-square);
     background-position: center;
     background-repeat: no-repeat;
     background-size: contain;
-  }
+}
 
 .gs-blue-header {
     color: #5088e7;
@@ -43,7 +57,7 @@
     background-repeat: no-repeat;
     background-size: contain;
     width: 250px;
-    height: 118px;
+    height: 55px; /* Adjusted for Quallaa logo aspect ratio (882:194 ≈ 4.5:1) */
     padding: 20px;
 }
 
@@ -53,7 +67,7 @@
     background-repeat: no-repeat;
     background-size: contain;
     width: 250px;
-    height: 118px;
+    height: 55px; /* Adjusted for Quallaa logo aspect ratio (882:194 ≈ 4.5:1) */
     padding: 20px;
 }
 
@@ -74,4 +88,4 @@ ul.theia-aboutExtensions {
     list-style-type: none;
     padding: 0;
     margin-left: 10px;
- }
+}
