@@ -22,6 +22,7 @@ import { injectable, inject } from '@theia/core/shared/inversify';
 import { MonacoEditor } from '@theia/monaco/lib/browser/monaco-editor';
 import * as monaco from '@theia/monaco-editor-core';
 import { OpenerService, open } from '@theia/core/lib/browser';
+import { FileService } from '@theia/filesystem/lib/browser/file-service';
 import URI from '@theia/core/lib/common/uri';
 import { KnowledgeBaseService } from '../../common/knowledge-base-protocol';
 import { isPositionInWikiLink } from '../../common/wiki-link-parser';
@@ -32,6 +33,9 @@ import { KeyCode, KeyMod } from '@theia/monaco-editor-core';
 export class WikiLinkNavigator implements Disposable {
     @inject(OpenerService)
     protected readonly openerService: OpenerService;
+
+    @inject(FileService)
+    protected readonly fileService: FileService;
 
     @inject(KnowledgeBaseService)
     protected readonly knowledgeBaseService: KnowledgeBaseService;
@@ -110,10 +114,14 @@ export class WikiLinkNavigator implements Disposable {
 
             try {
                 const currentFileUri = model.uri.toString();
-                const newNoteUri = await this.knowledgeBaseService.createNote(link.target, currentFileUri);
+                // Backend returns the URI where file should be created
+                const newNoteUriString = await this.knowledgeBaseService.createNote(link.target, currentFileUri);
+                const createdUri = new URI(newNoteUriString);
+
+                // Frontend creates the actual file
+                await this.fileService.create(createdUri, '');
 
                 // Open the newly created note
-                const createdUri = new URI(newNoteUri);
                 await open(this.openerService, createdUri);
                 return;
             } catch (error) {

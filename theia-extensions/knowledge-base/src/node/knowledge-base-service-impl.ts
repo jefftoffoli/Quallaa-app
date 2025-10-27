@@ -20,7 +20,6 @@
 
 import { injectable, inject } from '@theia/core/shared/inversify';
 import { FileSearchService } from '@theia/file-search/lib/common/file-search-service';
-import { FileService } from '@theia/filesystem/lib/browser/file-service';
 import URI from '@theia/core/lib/common/uri';
 import { KnowledgeBaseService, Note, WikiLink } from '../common/knowledge-base-protocol';
 import { parseWikiLinks } from '../common/wiki-link-parser';
@@ -29,9 +28,6 @@ import { parseWikiLinks } from '../common/wiki-link-parser';
 export class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
     @inject(FileSearchService)
     protected readonly fileSearchService: FileSearchService;
-
-    @inject(FileService)
-    protected readonly fileService: FileService;
 
     private noteCache: Map<string, Note> = new Map();
     private lastIndexTime = 0;
@@ -168,9 +164,8 @@ export class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
     }
 
     /**
-     * Create a new note file
-     * If target contains a path (e.g., "Folder/Note"), creates in that folder
-     * Otherwise, creates in default note location (workspace root for now)
+     * Get the URI where a new note should be created
+     * Returns the URI but does NOT create the file (frontend handles creation)
      */
     async createNote(target: string, currentFileUri?: string): Promise<string> {
         // Remove .md extension if present
@@ -192,19 +187,13 @@ export class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
             noteUri = baseUri.resolve(cleanTarget + '.md');
         }
 
-        // Create empty file
-        try {
-            await this.fileService.create(noteUri, '');
-            console.log(`Created new note: ${noteUri.toString()}`);
+        // Return URI for frontend to create
+        console.log(`Will create new note at: ${noteUri.toString()}`);
 
-            // Invalidate cache to pick up new file
-            this.lastIndexTime = 0;
+        // Invalidate cache so it picks up the new file once created
+        this.lastIndexTime = 0;
 
-            return noteUri.toString();
-        } catch (error) {
-            console.error(`Failed to create note ${noteUri.toString()}:`, error);
-            throw error;
-        }
+        return noteUri.toString();
     }
 
     /**
