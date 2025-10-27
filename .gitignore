@@ -11,5 +11,4 @@
 *.log
 license-check-summary.txt*
 
-# Private planning and strategy docs
-knowledge-base/
+# Knowledge base documentation is now public (EPL 2.0)
