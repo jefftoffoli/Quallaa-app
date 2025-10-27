@@ -1,3 +1,19 @@
+/********************************************************************************
+ * Copyright (C) 2025 Jeff Toffoli
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v. 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0.
+ *
+ * This Source Code may also be made available under the following Secondary
+ * Licenses when the conditions for such availability set forth in the Eclipse
+ * Public License v. 2.0 are satisfied: GNU General Public License, version 2
+ * with the GNU Classpath Exception which is available at
+ * https://www.gnu.org/software/classpath/license.html.
+ *
+ * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0
+ ********************************************************************************/
+
 /**
  * Backend implementation of the knowledge base service
  */
@@ -48,14 +64,14 @@ export class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
                 // Prioritize exact matches
                 const aExact = a.title.toLowerCase() === lowerQuery || a.basename.toLowerCase() === lowerQuery;
                 const bExact = b.title.toLowerCase() === lowerQuery || b.basename.toLowerCase() === lowerQuery;
-                if (aExact && !bExact) return -1;
-                if (!aExact && bExact) return 1;
+                if (aExact && !bExact) {return -1; }
+                if (!aExact && bExact) {return 1; }
 
                 // Then prioritize starts-with
                 const aStarts = a.title.toLowerCase().startsWith(lowerQuery) || a.basename.toLowerCase().startsWith(lowerQuery);
                 const bStarts = b.title.toLowerCase().startsWith(lowerQuery) || b.basename.toLowerCase().startsWith(lowerQuery);
-                if (aStarts && !bStarts) return -1;
-                if (!aStarts && bStarts) return 1;
+                if (aStarts && !bStarts) {return -1; }
+                if (!aStarts && bStarts) {return 1; }
 
                 // Alphabetical
                 return a.title.localeCompare(b.title);
@@ -85,19 +101,19 @@ export class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
 
         // 1. Try exact basename match first (most common case)
         let matches = allNotes.filter(n => n.basename.toLowerCase() === lowerTitle);
-        if (matches.length === 1) return matches[0];
-        if (matches.length > 1) return this.getMostRecentNote(matches);
+        if (matches.length === 1) {return matches[0]; }
+        if (matches.length > 1) {return this.getMostRecentNote(matches); }
 
         // 2. Try normalized match (treat spaces, hyphens, underscores as equivalent)
         const normalized = this.normalizeTitle(lowerTitle);
         matches = allNotes.filter(n => this.normalizeTitle(n.basename.toLowerCase()) === normalized);
-        if (matches.length === 1) return matches[0];
-        if (matches.length > 1) return this.getMostRecentNote(matches);
+        if (matches.length === 1) {return matches[0]; }
+        if (matches.length > 1) {return this.getMostRecentNote(matches); }
 
         // 3. Try exact title match (from frontmatter, future enhancement)
         matches = allNotes.filter(n => n.title.toLowerCase() === lowerTitle);
-        if (matches.length === 1) return matches[0];
-        if (matches.length > 1) return this.getMostRecentNote(matches);
+        if (matches.length === 1) {return matches[0]; }
+        if (matches.length > 1) {return this.getMostRecentNote(matches); }
 
         return undefined;
     }
@@ -114,8 +130,8 @@ export class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
             return notePath.endsWith(normalized) || notePath.endsWith(normalized + '.md');
         });
 
-        if (matches.length === 1) return matches[0];
-        if (matches.length > 1) return this.getMostRecentNote(matches);
+        if (matches.length === 1) {return matches[0]; }
+        if (matches.length > 1) {return this.getMostRecentNote(matches); }
 
         return undefined;
     }
@@ -234,7 +250,7 @@ export class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
                     // Check if this looks like a project root (has .git, package.json, etc.)
                     // For Phase 1.2, just use a reasonable ancestor
                     const depth = current.path.toString().split('/').length;
-                    if (depth <= 5) break; // Don't go too far up
+                    if (depth <= 5) {break; } // Don't go too far up
                     current = current.parent;
                 }
                 this.workspaceRoot = current;

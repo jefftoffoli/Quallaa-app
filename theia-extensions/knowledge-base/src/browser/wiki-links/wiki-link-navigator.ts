@@ -1,3 +1,19 @@
+/********************************************************************************
+ * Copyright (C) 2025 Jeff Toffoli
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v. 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0.
+ *
+ * This Source Code may also be made available under the following Secondary
+ * Licenses when the conditions for such availability set forth in the Eclipse
+ * Public License v. 2.0 are satisfied: GNU General Public License, version 2
+ * with the GNU Classpath Exception which is available at
+ * https://www.gnu.org/software/classpath/license.html.
+ *
+ * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0
+ ********************************************************************************/
+
 /**
  * Handles navigation when clicking on wiki links
  */
@@ -57,10 +73,10 @@ export class WikiLinkNavigator implements Disposable {
                 keybindings: [KeyMod.CtrlCmd | KeyCode.Enter],
                 contextMenuGroupId: 'navigation',
                 contextMenuOrder: 1.5,
-                run: async editor => {
-                    const position = editor.getPosition();
+                run: async editorInstance => {
+                    const position = editorInstance.getPosition();
                     if (position) {
-                        await this.handleLinkClick(editor, position);
+                        await this.handleLinkClick(editorInstance, position);
                     }
                 }
             })
@@ -86,7 +102,7 @@ export class WikiLinkNavigator implements Disposable {
         }
 
         // Try to resolve the link target
-        let note = await this.knowledgeBaseService.resolveWikiLink(link.target);
+        const note = await this.knowledgeBaseService.resolveWikiLink(link.target);
 
         if (!note) {
             // Broken link - create the note
@@ -97,8 +113,8 @@ export class WikiLinkNavigator implements Disposable {
                 const newNoteUri = await this.knowledgeBaseService.createNote(link.target, currentFileUri);
 
                 // Open the newly created note
-                const uri = new URI(newNoteUri);
-                await open(this.openerService, uri);
+                const createdUri = new URI(newNoteUri);
+                await open(this.openerService, createdUri);
                 return;
             } catch (error) {
                 console.error(`Failed to create note for broken link: ${link.target}`, error);
@@ -107,7 +123,7 @@ export class WikiLinkNavigator implements Disposable {
         }
 
         // Open the existing note
-        const uri = new URI(note.uri);
-        await open(this.openerService, uri);
+        const noteUri = new URI(note.uri);
+        await open(this.openerService, noteUri);
     }
 }
