@@ -6,7 +6,8 @@ module.exports = {
         './configs/warnings.eslintrc.json',
         './configs/errors.eslintrc.json',
         './configs/xss.eslintrc.json',
-        './configs/react.eslintrc.json'
+        './configs/react.eslintrc.json',
+        './configs/accessibility.eslintrc.json'
     ],
     ignorePatterns: [
         '**/{node_modules,lib}',
@@ -14,6 +15,10 @@ module.exports = {
     ],
     parserOptions: {
         tsconfigRootDir: __dirname,
-        project: ['./configs/tsconfig.eslint.json', './theia-extensions/*/tsconfig.json', 'applications/electron/tsconfig.eslint.json']
+        project: [
+            './configs/tsconfig.eslint.json',
+            './theia-extensions/*/tsconfig.json',
+            'applications/electron/tsconfig.eslint.json'
+        ]
     }
 };
