@@ -12,3 +12,7 @@
 license-check-summary.txt*
 
 # Knowledge base documentation is now public (EPL 2.0)
+# Playwright test artifacts
+test-results/
+playwright-report/
+test-*.png
