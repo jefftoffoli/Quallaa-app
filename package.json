@@ -17,6 +17,7 @@
     },
     "devDependencies": {
         "@eclipse-dash/nodejs-wrapper": "^0.0.1",
+        "@playwright/test": "^1.56.1",
         "@theia/cli": "1.65.1",
         "@types/yargs": "17.0.7",
         "@typescript-eslint/eslint-plugin": "^4.25.0",
@@ -35,6 +36,7 @@
         "lint-staged": "^16.2.6",
         "markdownlint-cli": "^0.45.0",
         "node-gyp": "^11.4.0",
+        "playwright": "^1.56.1",
         "prettier": "^3.6.2",
         "rimraf": "^2.7.1",
         "ts-node": "^10.0.0",
