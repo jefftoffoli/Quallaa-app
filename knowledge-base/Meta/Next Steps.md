@@ -107,7 +107,7 @@ Implement: [[View Containers]]
 
 **Deliverable:** Organized side panels
 
-## Phase 4: Graph View
+## Phase 4: Graph View & Images
 
 ### 4.1 Knowledge Graph
 
@@ -120,6 +120,18 @@ Implement: [[Knowledge Graph View]]
 - [ ] Local vs global mode
 
 **Deliverable:** Visual note network
+
+### 4.2 Basic Image Support
+
+Implement: [[Image Handling]]
+
+- [ ] Parse `![[image.png]]` syntax
+- [ ] Render images inline in Monaco
+- [ ] Relative path resolution
+- [ ] Drag-and-drop image insertion
+- [ ] Support PNG, JPG, GIF, SVG
+
+**Deliverable:** Functional image embedding
 
 ## Phase 5: WYSIWYG Editor
 
@@ -145,6 +157,18 @@ Implement: [[Composite vs Separate Widget Patterns]]
 
 **Deliverable:** Can toggle between WYSIWYG and source
 
+### 5.3 Enhanced Image Features
+
+Implement: [[Image Handling]]
+
+- [ ] Hover preview for image links
+- [ ] Image size control (`|100`, `|500x300`)
+- [ ] Alt text support
+- [ ] Image browser widget
+- [ ] Thumbnail generation
+
+**Deliverable:** Polished image experience
+
 ## Phase 6: Daily Notes
 
 ### 6.1 Daily Notes System
@@ -165,6 +189,18 @@ Implement: [[Daily Notes]]
 - [ ] Click to open daily note
 
 **Deliverable:** Visual date navigation
+
+### 6.3 Advanced Image Features
+
+Implement: [[Image Handling]]
+
+- [ ] Image backlinks ("which notes reference this image?")
+- [ ] Image nodes in [[Knowledge Graph View]]
+- [ ] Image search by filename
+- [ ] OCR for text extraction from screenshots
+- [ ] Image annotations
+
+**Deliverable:** Images as first-class KB citizens
 
 ## Phase 7: AI Cloud Services (Monetization)
 
@@ -285,9 +321,12 @@ See: [[Monetization Strategy - AI Cloud Services]]
 ✅ Quick switcher
 ✅ Knowledge graph
 ✅ WYSIWYG editor
+✅ Basic image embedding
 ```
 
 **Ready for:** Personal use, early feedback
+
+**Note:** Images deferred to Phase 4, not blocking earlier phases.
 
 ### Beta (End of Phase 8)
 
@@ -395,9 +434,9 @@ often
 Phase 1:  Foundation          - Project setup and wiki links
 Phase 2:  Knowledge Features  - Backlinks, tags, quick switcher
 Phase 3:  Activity Bar        - Custom sidebar with KB-first panels
-Phase 4:  Graph View          - Visual knowledge graph
-Phase 5:  WYSIWYG Editor      - Hybrid markdown editor
-Phase 6:  Daily Notes         - Journal and calendar
+Phase 4:  Graph View & Images - Visual knowledge graph + basic image embedding
+Phase 5:  WYSIWYG Editor      - Hybrid markdown editor + enhanced images
+Phase 6:  Daily Notes         - Journal, calendar + advanced image features
 Phase 7:  AI Cloud Services   - DeepSeek-OCR compression service (MONETIZATION)
 Phase 8:  Polish              - Styling and performance
 Phase 9:  Testing             - QA and user testing

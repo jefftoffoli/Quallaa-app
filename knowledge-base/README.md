@@ -69,6 +69,7 @@ Core features that make this a knowledge-first IDE:
 - [[Daily Notes]]
 - [[Tags System]]
 - [[WYSIWYG Markdown Editor]]
+- [[Image Handling]]
 
 ## 🛠️ Implementation
 
