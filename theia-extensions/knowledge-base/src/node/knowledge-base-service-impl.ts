@@ -2,16 +2,9 @@
  * Copyright (C) 2025 Jeff Toffoli
  *
  * This program and the accompanying materials are made available under the
- * terms of the Eclipse Public License v. 2.0 which is available at
- * http://www.eclipse.org/legal/epl-2.0.
+ * terms of the MIT License, which is available in the project root.
  *
- * This Source Code may also be made available under the following Secondary
- * Licenses when the conditions for such availability set forth in the Eclipse
- * Public License v. 2.0 are satisfied: GNU General Public License, version 2
- * with the GNU Classpath Exception which is available at
- * https://www.gnu.org/software/classpath/license.html.
- *
- * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0
+ * SPDX-License-Identifier: MIT
  ********************************************************************************/
 
 /**
@@ -20,14 +13,20 @@
 
 import { injectable, inject } from '@theia/core/shared/inversify';
 import { FileSearchService } from '@theia/file-search/lib/common/file-search-service';
+import { WorkspaceServer } from '@theia/workspace/lib/common/workspace-protocol';
 import URI from '@theia/core/lib/common/uri';
 import { KnowledgeBaseService, Note, WikiLink } from '../common/knowledge-base-protocol';
 import { parseWikiLinks } from '../common/wiki-link-parser';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @injectable()
 export class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
     @inject(FileSearchService)
     protected readonly fileSearchService: FileSearchService;
+
+    @inject(WorkspaceServer)
+    protected readonly workspaceServer: WorkspaceServer;
 
     private noteCache: Map<string, Note> = new Map();
     private lastIndexTime = 0;
@@ -60,14 +59,22 @@ export class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
                 // Prioritize exact matches
                 const aExact = a.title.toLowerCase() === lowerQuery || a.basename.toLowerCase() === lowerQuery;
                 const bExact = b.title.toLowerCase() === lowerQuery || b.basename.toLowerCase() === lowerQuery;
-                if (aExact && !bExact) {return -1; }
-                if (!aExact && bExact) {return 1; }
+                if (aExact && !bExact) {
+                    return -1;
+                }
+                if (!aExact && bExact) {
+                    return 1;
+                }
 
                 // Then prioritize starts-with
                 const aStarts = a.title.toLowerCase().startsWith(lowerQuery) || a.basename.toLowerCase().startsWith(lowerQuery);
                 const bStarts = b.title.toLowerCase().startsWith(lowerQuery) || b.basename.toLowerCase().startsWith(lowerQuery);
-                if (aStarts && !bStarts) {return -1; }
-                if (!aStarts && bStarts) {return 1; }
+                if (aStarts && !bStarts) {
+                    return -1;
+                }
+                if (!aStarts && bStarts) {
+                    return 1;
+                }
 
                 // Alphabetical
                 return a.title.localeCompare(b.title);
@@ -97,19 +104,31 @@ export class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
 
         // 1. Try exact basename match first (most common case)
         let matches = allNotes.filter(n => n.basename.toLowerCase() === lowerTitle);
-        if (matches.length === 1) {return matches[0]; }
-        if (matches.length > 1) {return this.getMostRecentNote(matches); }
+        if (matches.length === 1) {
+            return matches[0];
+        }
+        if (matches.length > 1) {
+            return this.getMostRecentNote(matches);
+        }
 
         // 2. Try normalized match (treat spaces, hyphens, underscores as equivalent)
         const normalized = this.normalizeTitle(lowerTitle);
         matches = allNotes.filter(n => this.normalizeTitle(n.basename.toLowerCase()) === normalized);
-        if (matches.length === 1) {return matches[0]; }
-        if (matches.length > 1) {return this.getMostRecentNote(matches); }
+        if (matches.length === 1) {
+            return matches[0];
+        }
+        if (matches.length > 1) {
+            return this.getMostRecentNote(matches);
+        }
 
         // 3. Try exact title match (from frontmatter, future enhancement)
         matches = allNotes.filter(n => n.title.toLowerCase() === lowerTitle);
-        if (matches.length === 1) {return matches[0]; }
-        if (matches.length > 1) {return this.getMostRecentNote(matches); }
+        if (matches.length === 1) {
+            return matches[0];
+        }
+        if (matches.length > 1) {
+            return this.getMostRecentNote(matches);
+        }
 
         return undefined;
     }
@@ -126,8 +145,12 @@ export class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
             return notePath.endsWith(normalized) || notePath.endsWith(normalized + '.md');
         });
 
-        if (matches.length === 1) {return matches[0]; }
-        if (matches.length > 1) {return this.getMostRecentNote(matches); }
+        if (matches.length === 1) {
+            return matches[0];
+        }
+        if (matches.length > 1) {
+            return this.getMostRecentNote(matches);
+        }
 
         return undefined;
     }
@@ -217,37 +240,58 @@ export class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
     }
 
     /**
+     * Set the workspace root from a file URI
+     */
+    async setWorkspaceFromFile(fileUri: string): Promise<void> {
+        const uri = new URI(fileUri);
+        // Get the parent directory (workspace root)
+        this.workspaceRoot = uri.parent;
+        console.log('[KnowledgeBase] Workspace root set to:', this.workspaceRoot.toString());
+        // Clear cache to force re-indexing
+        this.lastIndexTime = 0;
+    }
+
+    /**
      * Index all markdown files in the workspace
      */
     private async indexNotes(): Promise<void> {
         this.noteCache.clear();
 
         try {
-            // Search for all .md files in the workspace
-            const results = await this.fileSearchService.find('*.md', {
-                limit: 10000,
-                useGitIgnore: true
-            });
-
-            // Derive workspace root from first result if not set
-            if (results.length > 0 && !this.workspaceRoot) {
-                const firstUri = new URI(results[0]);
-                // Find the common ancestor - for simplicity, go up until we find a reasonable root
-                // This heuristic works for most cases
-                let current = firstUri.parent;
-                while (current.path.dir !== current.path.root && current.parent.toString() !== current.toString()) {
-                    // Check if this looks like a project root (has .git, package.json, etc.)
-                    // For Phase 1.2, just use a reasonable ancestor
-                    const depth = current.path.toString().split('/').length;
-                    if (depth <= 5) {break; } // Don't go too far up
-                    current = current.parent;
-                }
-                this.workspaceRoot = current;
-                console.log('Derived workspace root:', this.workspaceRoot.toString());
+            if (!this.workspaceRoot) {
+                console.warn('[KnowledgeBase] No workspace root set - cannot index notes');
+                return;
             }
 
+            // Convert URI to filesystem path
+            const fsPath = this.workspaceRoot.path.fsPath();
+            console.log('[KnowledgeBase] Searching for .md files in:', fsPath);
+
+            // Recursively find all .md files
+            const findMarkdownFiles = (dir: string): string[] => {
+                const files: string[] = [];
+                try {
+                    const entries = fs.readdirSync(dir, { withFileTypes: true });
+                    for (const entry of entries) {
+                        const fullPath = path.join(dir, entry.name);
+                        if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'node_modules') {
+                            files.push(...findMarkdownFiles(fullPath));
+                        } else if (entry.isFile() && entry.name.endsWith('.md')) {
+                            files.push(fullPath);
+                        }
+                    }
+                } catch (err) {
+                    console.error('[KnowledgeBase] Error reading directory:', dir, err);
+                }
+                return files;
+            };
+
+            const results = findMarkdownFiles(fsPath);
+            console.log('[KnowledgeBase] Found', results.length, 'markdown files in', fsPath);
+
             for (const result of results) {
-                const uri = new URI(result);
+                // Convert filesystem path to file:// URI
+                const uri = new URI('file://' + result);
                 const basename = uri.path.base;
                 const name = basename.replace(/\.md$/, '');
 
@@ -255,7 +299,7 @@ export class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
                     uri: uri.toString(),
                     title: name, // TODO: Extract from frontmatter in future
                     basename: name,
-                    path: uri.path.toString()
+                    path: uri.path.toString(),
                 };
 
                 this.noteCache.set(uri.toString(), note);
