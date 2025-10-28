@@ -2,7 +2,8 @@
 
 ## Overview
 
-This knowledge base was created from a detailed conversation about building a knowledge-first IDE using Theia.
+This knowledge base was created from a detailed conversation about building a
+knowledge-first IDE using Theia.
 
 ## Conversation Flow
 
@@ -11,11 +12,13 @@ This knowledge base was created from a detailed conversation about building a kn
 **User Background:** Coming from Next.js, wanted to understand Theia
 
 **Topics Covered:**
+
 - [[Next.js vs Theia Architecture]]
 - [[Frontend and Backend Communication]]
 - [[Dependency Injection in Theia]]
 
 **Key Metaphors:**
+
 - Restaurant (Next.js) vs Swiss Army Knife (Theia)
 - Phone call (HTTP) vs Walkie-talkie (RPC)
 - LEGO instruction manual (DI)
@@ -25,6 +28,7 @@ This knowledge base was created from a detailed conversation about building a kn
 **User Question:** How does the Activity Bar → Explorer → Editor flow work?
 
 **Topics Covered:**
+
 - [[Activity Bar]]
 - [[View Containers]]
 - [[Widget System]]
@@ -32,6 +36,7 @@ This knowledge base was created from a detailed conversation about building a kn
 - [[Side Panel Handlers]]
 
 **Files Explored:**
+
 - `@theia/core/src/browser/shell/application-shell.ts`
 - `@theia/core/src/browser/shell/side-panel-handler.ts`
 - `@theia/navigator/src/browser/navigator-contribution.ts`
@@ -39,20 +44,24 @@ This knowledge base was created from a detailed conversation about building a kn
 ### 3. Panel Layering and Priority
 
 **User Questions:**
+
 - How does priority structure work?
 - Can panels layer on top of panels?
 
 **Topics Covered:**
+
 - [[Rank and Priority in Side Panels]]
 - [[Single-Document vs Multiple-Document Mode]]
 
-**Key Insight:** Side panels use single-document mode (only one visible), main area uses multiple-document (can split/tab)
+**Key Insight:** Side panels use single-document mode (only one visible), main
+area uses multiple-document (can split/tab)
 
 ### 4. Diff Editor Deep Dive
 
 **User Question:** How does diff view show two editors side-by-side?
 
 **Topics Covered:**
+
 - [[Diff Editor Architecture]]
 - [[URI Schemes in Theia]]
 
@@ -63,6 +72,7 @@ This knowledge base was created from a detailed conversation about building a kn
 **User Question:** Could markdown viewer work like diff editor?
 
 **Topics Covered:**
+
 - [[Composite vs Separate Widget Patterns]]
 - Two approaches: Composite widget vs Separate widgets
 - Trade-offs between approaches
@@ -72,6 +82,7 @@ This knowledge base was created from a detailed conversation about building a kn
 **User Question:** Can we make Theia always open .md in WYSIWYG?
 
 **Topics Covered:**
+
 - [[OpenHandler Priority System]]
 - [[OpenerService]]
 - How to override default handlers
@@ -80,12 +91,17 @@ This knowledge base was created from a detailed conversation about building a kn
 
 ### 7. PROJECT VISION REVEALED
 
-**Critical Pivot:** User clarified this isn't just learning Theia, it's building a specific product!
+**Critical Pivot:** User clarified this isn't just learning Theia, it's building
+a specific product!
 
 **User Quote:**
-> "I'm not sure that a Theia extension is the idea... where I'm eventually hoping to get is a fork of theia that is dedicated to progressive disclosure for natural language developers."
+
+> "I'm not sure that a Theia extension is the idea... where I'm eventually
+> hoping to get is a fork of theia that is dedicated to progressive disclosure
+> for natural language developers."
 
 **Topics Covered:**
+
 - [[Project Vision - Knowledge-First IDE]]
 - [[Natural Language Developers]]
 - [[Progressive Disclosure Pattern]]
@@ -95,6 +111,7 @@ This knowledge base was created from a detailed conversation about building a kn
 **User Reference:** https://github.com/foambubble/foam
 
 **Topics Covered:**
+
 - [[Foam Project Analysis]]
 - What to borrow (foam-core, wiki links, graph)
 - What to change (UI philosophy, WYSIWYG)
@@ -102,9 +119,12 @@ This knowledge base was created from a detailed conversation about building a kn
 ### 9. Critical User Feedback
 
 **User Feedback:**
-> "You added this part about inline code execution - I don't think this is what we actually want in our project."
+
+> "You added this part about inline code execution - I don't think this is what
+> we actually want in our project."
 
 **Topics Covered:**
+
 - [[Open Questions]] - Documented this feedback
 - Removed inline code execution from vision
 - Clarified scope of project
@@ -112,25 +132,31 @@ This knowledge base was created from a detailed conversation about building a kn
 ### 10. Knowledge Base Creation Request
 
 **User Request:**
-> "Let's create a directory in this project called knowledge-base. I want you to review our conversation in detail and create separate atomic .md documents for every little topic that we have talked about."
+
+> "Let's create a directory in this project called knowledge-base. I want you to
+> review our conversation in detail and create separate atomic .md documents for
+> every little topic that we have talked about."
 
 **Result:** This knowledge base!
 
 ## Documents Created
 
 ### Core Vision
+
 - [[Project Vision - Knowledge-First IDE]]
 - [[Natural Language Developers]]
 - [[Obsidian-Like Experience]]
 - [[Progressive Disclosure Pattern]]
 
 ### Architecture
+
 - [[Next.js vs Theia Architecture]]
 - [[Dependency Injection in Theia]]
 - [[Frontend and Backend Communication]]
 - [[Monorepo Structure]]
 
 ### UI Components
+
 - [[Theia Application Shell]]
 - [[Widget System]]
 - [[Activity Bar]]
@@ -138,17 +164,20 @@ This knowledge base was created from a detailed conversation about building a kn
 - [[Side Panel Handlers]]
 
 ### Patterns and Concepts
+
 - [[Single-Document vs Multiple-Document Mode]]
 - [[Rank and Priority in Side Panels]]
 - [[Composite vs Separate Widget Patterns]]
 - [[URI Schemes in Theia]]
 
 ### File Opening
+
 - [[OpenerService]]
 - [[OpenHandler Priority System]]
 - [[Diff Editor Architecture]]
 
 ### Knowledge Features
+
 - [[Wiki Links]]
 - [[Backlinks Panel]]
 - [[Knowledge Graph View]]
@@ -158,6 +187,7 @@ This knowledge base was created from a detailed conversation about building a kn
 - [[WYSIWYG Markdown Editor]]
 
 ### Implementation
+
 - [[Foam Project Analysis]]
 - [[Open Questions]]
 - [[Next Steps]]
@@ -167,8 +197,8 @@ This knowledge base was created from a detailed conversation about building a kn
 
 ### 1. Fork vs Extension
 
-**Decision:** Fork Theia (not just extension)
-**Reason:** Deep customization needed (activity bar, WYSIWYG, etc.)
+**Decision:** Fork Theia (not just extension) **Reason:** Deep customization
+needed (activity bar, WYSIWYG, etc.)
 
 ### 2. Knowledge-First UI
 
@@ -177,18 +207,18 @@ This knowledge base was created from a detailed conversation about building a kn
 
 ### 3. WYSIWYG Editor
 
-**Decision:** Implement WYSIWYG markdown editor
-**Approach:** Hybrid widget with TipTap (WYSIWYG) + Monaco (source) toggle
+**Decision:** Implement WYSIWYG markdown editor **Approach:** Hybrid widget with
+TipTap (WYSIWYG) + Monaco (source) toggle
 
 ### 4. Progressive Disclosure
 
-**Decision:** Adapt UI to user sophistication
-**Approach:** Track user actions, reveal IDE features when needed
+**Decision:** Adapt UI to user sophistication **Approach:** Track user actions,
+reveal IDE features when needed
 
 ### 5. No Inline Code Execution
 
-**Decision:** DON'T implement Jupyter-like code execution
-**Reason:** User explicitly said "I don't think this is what we actually want"
+**Decision:** DON'T implement Jupyter-like code execution **Reason:** User
+explicitly said "I don't think this is what we actually want"
 
 ## Unresolved Questions
 
@@ -204,17 +234,17 @@ See: [[Open Questions]]
 
 See: [[Next Steps]]
 
-**Phase 1:** Set up project structure
-**Phase 2:** Implement core knowledge features
-**Phase 3:** Build WYSIWYG editor
-**Phase 4:** Add progressive disclosure
-**Phase 5:** Polish and launch
+**Phase 1:** Set up project structure **Phase 2:** Implement core knowledge
+features **Phase 3:** Build WYSIWYG editor **Phase 4:** Add progressive
+disclosure **Phase 5:** Polish and launch
 
 ## Related Concepts
 
 All documents in this knowledge base are part of one coherent vision:
 
-**Build an Obsidian-like knowledge base that progressively reveals IDE features as users need them, targeting natural language developers who think in markdown but occasionally need code.**
+**Build an Obsidian-like knowledge base that progressively reveals IDE features
+as users need them, targeting natural language developers who think in markdown
+but occasionally need code.**
 
 ## Timeline
 

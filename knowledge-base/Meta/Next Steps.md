@@ -20,6 +20,7 @@ Now that we understand the architecture, here's the plan:
 See: [[Monorepo Structure]], [[Extension Structure Decision]]
 
 **Infrastructure Complete:**
+
 - Prettier formatting (180 char, 4-space tabs, pre-commit)
 - ESLint with React Hooks and accessibility rules
 - Markdown linting configured
@@ -165,26 +166,44 @@ Implement: [[Daily Notes]]
 
 **Deliverable:** Visual date navigation
 
-## Phase 7: AI Chat Integration
+## Phase 7: AI Cloud Services (Monetization)
 
-### 7.1 AI Chat Panel
+See: [[Monetization Strategy - AI Cloud Services]]
 
-**Note:** Progressive disclosure has been removed from roadmap (see [[Open Questions]])
+### 7.1 DeepSeek-OCR Cloud Service MVP
+
+**Primary revenue opportunity - visual compression AI service**
+
+- [ ] Python FastAPI service with DeepSeek-OCR integration
+- [ ] Batch compression pipeline for user knowledge bases
+- [ ] Basic semantic search API
+- [ ] IDE client integration (upload KB, query results)
+- [ ] User authentication and billing (Stripe)
+
+**Deliverable:** "Search Pro" tier MVP ($5/month)
+
+### 7.2 AI Assistant Features
+
+**Advanced paid tier features**
+
+- [ ] Chat interface with compressed KB context
+- [ ] Cross-document synthesis and summarization
+- [ ] Temporal analysis ("how has my thinking evolved?")
+- [ ] Discovery recommendations
+- [ ] Smart daily notes suggestions
+
+**Deliverable:** "AI Assistant" tier ($15/month)
+
+### 7.3 Basic AI Chat Panel (Free Tier)
+
+**Simple AI chat without compression (optional)**
 
 - [ ] AI chat widget in sidebar
 - [ ] Integration with AI provider (Claude, ChatGPT, or local)
 - [ ] Code generation from natural language
 - [ ] Context-aware suggestions based on current note
 
-**Deliverable:** Working AI chat panel
-
-### 7.2 Custom Agent Framework
-
-- [ ] Plugin/extension system for custom agents
-- [ ] Agent configuration and management
-- [ ] Marketplace foundation (for future monetization)
-
-**Deliverable:** Extensible agent system
+**Deliverable:** Working AI chat panel (free tier)
 
 ## Phase 8: Polish
 
@@ -298,13 +317,17 @@ Implement: [[Daily Notes]]
 See: [[Open Questions]] and [[Architecture Decisions]]
 
 **Already decided:**
+
 1. ✅ WYSIWYG vs Source: Toggle (hybrid approach)
 2. ✅ Progressive Disclosure: Not implementing automatic detection
 3. ✅ Open Source: EPL 2.0, fully open source
-4. ✅ Business Model: Free core, sell custom AI agents
+4. ✅ Business Model: Free IDE + Paid AI cloud services (DeepSeek-OCR visual
+   compression)
 5. ✅ File Organization: Flat namespace view
+6. ✅ DeepSeek-OCR: Cloud service only (NOT IDE integration)
 
 **Still to decide:**
+
 1. ⏳ Obsidian Compatibility: Full or inspired-by?
 2. ⏳ Graph view click behavior
 3. ⏳ AI provider choice
@@ -349,22 +372,22 @@ See: [[Open Questions]] and [[Architecture Decisions]]
 
 ### Technical Risks
 
-**Risk:** Theia updates break our fork
-**Mitigation:** Stay close to Theia releases, contribute upstream
+**Risk:** Theia updates break our fork **Mitigation:** Stay close to Theia
+releases, contribute upstream
 
-**Risk:** WYSIWYG performance issues
-**Mitigation:** Start with Monaco, add WYSIWYG gradually
+**Risk:** WYSIWYG performance issues **Mitigation:** Start with Monaco, add
+WYSIWYG gradually
 
-**Risk:** Graph view doesn't scale
-**Mitigation:** Implement virtual rendering, WebGL fallback
+**Risk:** Graph view doesn't scale **Mitigation:** Implement virtual rendering,
+WebGL fallback
 
 ### Product Risks
 
-**Risk:** Too similar to Obsidian
-**Mitigation:** Focus on differentiators (progressive disclosure, code execution)
+**Risk:** Too similar to Obsidian **Mitigation:** Focus on differentiators
+(progressive disclosure, code execution)
 
-**Risk:** Too complex for target users
-**Mitigation:** User testing early and often
+**Risk:** Too complex for target users **Mitigation:** User testing early and
+often
 
 ## Phase Overview
 
@@ -375,7 +398,7 @@ Phase 3:  Activity Bar        - Custom sidebar with KB-first panels
 Phase 4:  Graph View          - Visual knowledge graph
 Phase 5:  WYSIWYG Editor      - Hybrid markdown editor
 Phase 6:  Daily Notes         - Journal and calendar
-Phase 7:  AI Chat             - Chat panel and custom agents
+Phase 7:  AI Cloud Services   - DeepSeek-OCR compression service (MONETIZATION)
 Phase 8:  Polish              - Styling and performance
 Phase 9:  Testing             - QA and user testing
 Phase 10: Launch              - Packaging and release
@@ -384,6 +407,8 @@ Phase 10: Launch              - Packaging and release
 ## Related Concepts
 
 - [[Project Vision - Knowledge-First IDE]]
+- [[Monetization Strategy - AI Cloud Services]]
+- [[DeepSeek-OCR Integration Assessment]]
 - [[Obsidian-Like Experience]]
 - [[Progressive Disclosure Pattern]]
 - All implementation guides

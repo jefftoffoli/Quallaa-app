@@ -2,15 +2,18 @@
 
 ## The Core Idea
 
-Building a **Theia fork** that puts knowledge management first, with IDE features progressively disclosed as needed.
+Building a **Theia fork** that puts knowledge management first, with IDE
+features progressively disclosed as needed.
 
-**Target User:** [[Natural Language Developers]] - people who think in markdown and natural language, but occasionally need to execute code.
+**Target User:** [[Natural Language Developers]] - people who think in markdown
+and natural language, but occasionally need to execute code.
 
 ## Design Philosophy
 
 ### Knowledge-First, Not Code-First
 
 **Traditional IDE:**
+
 ```
 User Mental Model: "I'm a developer writing code"
 Entry Point: File Explorer, Code Editor, Terminal
@@ -18,6 +21,7 @@ Markdown: Just another file type
 ```
 
 **Our Vision:**
+
 ```
 User Mental Model: "I'm building a knowledge base that can execute"
 Entry Point: Note Library, Graph View, Daily Notes
@@ -27,18 +31,21 @@ Markdown: THE FIRST-CLASS CITIZEN
 ## Key Differentiators
 
 ### vs Obsidian
+
 - ✅ Has Obsidian's knowledge management UX
 - ➕ Adds real IDE capabilities (debugging, git, terminal)
 - ➕ AI chat for code generation and assistance
 - ➕ AI-native design from the ground up
 
 ### vs VS Code
+
 - ✅ Has VS Code's powerful editing and execution
 - ➕ Adds knowledge graph and linking
 - ➕ Obsidian-like UI
 - ➕ Progressive disclosure (less overwhelming)
 
 ### vs Foam
+
 - ✅ Uses similar concepts (wiki links, backlinks, graph)
 - ➕ Knowledge-first UI (not code-first with KB bolted on)
 - ➕ [[WYSIWYG Markdown Editor]] by default
@@ -47,11 +54,13 @@ Markdown: THE FIRST-CLASS CITIZEN
 ## Positioning
 
 **Tagline Ideas:**
+
 - "Where knowledge becomes executable"
 - "Your second brain, with superpowers"
 - "Think in markdown, execute in any language"
 
 **Target Markets:**
+
 1. [[Natural Language Developers]]
 2. AI-assisted coders
 3. Technical writers
@@ -79,12 +88,16 @@ See: [[Extension vs Fork Decision]]
 See: [[Open Questions]] for full list
 
 **Decided:**
+
 - ✅ AI chat integration for code generation (not inline execution)
-- ✅ Open source (EPL 2.0) with monetization via custom AI agents
+- ✅ Open source (EPL 2.0) with monetization via AI cloud services (see
+  [[Monetization Strategy - AI Cloud Services]])
 - ✅ Flat namespace view with tags-first organization
 - ✅ No automatic progressive disclosure
+- ✅ DeepSeek-OCR as paid cloud service (NOT IDE integration)
 
 **To Be Decided:**
+
 - Graph view interaction behavior
 - Obsidian compatibility level
 - Plugin ecosystem approach

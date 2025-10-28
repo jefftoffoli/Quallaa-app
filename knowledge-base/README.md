@@ -21,22 +21,26 @@ knowledge-base/
 
 ## 🎯 Project Vision
 
-Core concept and goals for the knowledge-first IDE:
+Core concept, goals, and business model for the knowledge-first IDE:
 
-- [[Project Vision - Knowledge-First IDE]]
-- [[Natural Language Developers]]
-- [[Obsidian-Like Experience]]
-- [[Progressive Disclosure Pattern]]
+- [[Project Vision - Knowledge-First IDE]] - Core vision and positioning
+- [[Monetization Strategy - AI Cloud Services]] - Business model and revenue
+  strategy
+- [[Natural Language Developers]] - Target audience
+- [[Obsidian-Like Experience]] - UX goals
+- [[Progressive Disclosure Pattern]] - Complexity management approach
 
 ## 🏗️ Architecture
 
 ### Theia Fundamentals
+
 - [[Next.js vs Theia Architecture]]
 - [[Dependency Injection in Theia]]
 - [[Frontend and Backend Communication]]
 - [[Monorepo Structure]]
 
 ### Core Components
+
 - [[Theia Application Shell]]
 - [[Widget System]]
 - [[Activity Bar]]
@@ -77,20 +81,23 @@ Guides for implementing key functionality:
 
 ## 📚 Reference
 
-Analysis of related projects and comparisons:
+Analysis of related projects, technologies, and competitive landscape:
 
-- [[Foam Project Analysis]]
-- [[Obsidian Feature Comparison]]
+- [[Foam Project Analysis]] - Similar markdown-based knowledge system
+- [[Obsidian Feature Comparison]] - Competitive feature analysis
+- [[DeepSeek-OCR Integration Assessment]] - Visual compression technology
+  analysis
 
 ## 📋 Meta
 
 Project documentation and planning:
 
 - [[Architecture Decisions]] - Key product and technical decisions
-- [[Open Questions]] - Decisions to be made
 - [[Next Steps]] - Implementation roadmap
-- [[Conversation Index]] - Complete conversation history
 - [[Publishing and Release Process]] - Distribution and release strategy
+
+**Archive**: Historical documents moved to `Meta/Archive/` (Open Questions,
+Conversation Index, Phase 1.2 Implementation Guide)
 
 ---
 
@@ -100,4 +107,5 @@ See [[README-AI]] for token-optimized guidance on what to read and when.
 
 ---
 
-**Note:** All documents use wiki-link syntax (`[[Document Name]]`) for cross-referencing.
+**Note:** All documents use wiki-link syntax (`[[Document Name]]`) for
+cross-referencing.
