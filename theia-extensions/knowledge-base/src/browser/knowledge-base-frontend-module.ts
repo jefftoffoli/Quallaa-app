@@ -9,13 +9,16 @@
 /**
  * Frontend module for knowledge base extension
  */
+
+import '../../src/browser/style/wiki-links.css';
+
 import { ContainerModule } from '@theia/core/shared/inversify';
 import { FrontendApplicationContribution } from '@theia/core/lib/browser';
 // eslint-disable-next-line deprecation/deprecation
 import { WebSocketConnectionProvider } from '@theia/core/lib/browser/messaging';
 import { WikiLinkContribution } from './wiki-links/wiki-link-contribution';
 import { WikiLinkCompletionProvider } from './wiki-links/wiki-link-completion-provider';
-import { WikiLinkDetector } from './wiki-links/wiki-link-detector';
+import { WikiLinkProvider } from './wiki-links/wiki-link-provider';
 import { WikiLinkNavigator } from './wiki-links/wiki-link-navigator';
 import { KnowledgeBaseWorkspaceContribution } from './knowledge-base-workspace-contribution';
 import { KnowledgeBaseService, KnowledgeBasePath } from '../common/knowledge-base-protocol';
@@ -23,7 +26,7 @@ import { KnowledgeBaseService, KnowledgeBasePath } from '../common/knowledge-bas
 export default new ContainerModule(bind => {
     // Wiki link services
     bind(WikiLinkCompletionProvider).toSelf().inSingletonScope();
-    bind(WikiLinkDetector).toSelf().inSingletonScope();
+    bind(WikiLinkProvider).toSelf().inSingletonScope();
     bind(WikiLinkNavigator).toSelf().inSingletonScope();
 
     // Workspace indexing contribution

@@ -471,40 +471,69 @@ export class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
 
         console.log('[KnowledgeBase] Starting file watcher on:', fsPath);
 
-        this.watcher = chokidar.watch('**/*.md', {
-            cwd: fsPath,
+        // Watch the directory itself, filtering for .md files in event handlers
+        // This avoids glob pattern issues with chokidar
+        this.watcher = chokidar.watch(fsPath, {
             ignoreInitial: true, // Don't fire for initial files
-            ignored: ['**/node_modules/**', '**/.git/**', '**/.*'],
+            ignored: /(node_modules|\.git)/, // Use regex for better performance
             persistent: true,
+            usePolling: false, // Use native fsevents on macOS
+            depth: undefined, // Watch all subdirectories
             awaitWriteFinish: {
                 stabilityThreshold: 100,
                 pollInterval: 50,
             },
         });
 
+        // Enhanced logging: ready event
+        this.watcher.on('ready', () => {
+            console.log('[KnowledgeBase] ✅ File watcher ready and monitoring');
+            const watched = this.watcher?.getWatched();
+            if (watched) {
+                const dirCount = Object.keys(watched).length;
+                const fileCount = Object.values(watched).reduce((sum, files) => sum + files.length, 0);
+                console.log(`[KnowledgeBase] Watching ${dirCount} directories with ${fileCount} files`);
+                console.log('[KnowledgeBase] Watched directories:', Object.keys(watched).slice(0, 5), '...');
+            }
+        });
+
+        // Enhanced logging: all events
+        this.watcher.on('all', (event, filePath) => {
+            console.log(`[KnowledgeBase] 📡 Watcher event: "${event}" - ${filePath}`);
+        });
+
         this.watcher.on('add', async filePath => {
-            const fullPath = path.join(fsPath, filePath);
-            console.log('[KnowledgeBase] File added:', filePath);
-            await this.indexFile(fullPath);
+            // Filter for .md files only
+            if (!filePath.endsWith('.md')) {
+                return;
+            }
+            console.log('[KnowledgeBase] ➕ File added:', filePath);
+            await this.indexFile(filePath);
         });
 
         this.watcher.on('change', async filePath => {
-            const fullPath = path.join(fsPath, filePath);
-            console.log('[KnowledgeBase] File changed:', filePath);
-            const uri = new URI('file://' + fullPath);
+            // Filter for .md files only
+            if (!filePath.endsWith('.md')) {
+                return;
+            }
+            console.log('[KnowledgeBase] 📝 File changed:', filePath);
+            const uri = new URI('file://' + filePath);
             this.removeFromIndex(uri.toString());
-            await this.indexFile(fullPath);
+            await this.indexFile(filePath);
         });
 
         this.watcher.on('unlink', filePath => {
-            const fullPath = path.join(fsPath, filePath);
-            console.log('[KnowledgeBase] File deleted:', filePath);
-            const uri = new URI('file://' + fullPath);
+            // Filter for .md files only
+            if (!filePath.endsWith('.md')) {
+                return;
+            }
+            console.log('[KnowledgeBase] ➖ File deleted:', filePath);
+            const uri = new URI('file://' + filePath);
             this.removeFromIndex(uri.toString());
         });
 
         this.watcher.on('error', error => {
-            console.error('[KnowledgeBase] File watcher error:', error);
+            console.error('[KnowledgeBase] ❌ File watcher error:', error);
         });
     }
 

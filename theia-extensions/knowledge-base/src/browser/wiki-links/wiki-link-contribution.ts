@@ -15,9 +15,10 @@ import { injectable, inject } from '@theia/core/shared/inversify';
 import { FrontendApplicationContribution } from '@theia/core/lib/browser';
 import { EditorManager } from '@theia/editor/lib/browser';
 import { MonacoEditor } from '@theia/monaco/lib/browser/monaco-editor';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import * as monaco from '@theia/monaco-editor-core';
 import { WikiLinkCompletionProvider } from './wiki-link-completion-provider';
-import { WikiLinkDetector } from './wiki-link-detector';
+import { WikiLinkProvider } from './wiki-link-provider';
 import { WikiLinkNavigator } from './wiki-link-navigator';
 import { DisposableCollection } from '@theia/core';
 
@@ -29,8 +30,8 @@ export class WikiLinkContribution implements FrontendApplicationContribution {
     @inject(WikiLinkCompletionProvider)
     protected readonly completionProvider: WikiLinkCompletionProvider;
 
-    @inject(WikiLinkDetector)
-    protected readonly linkDetector: WikiLinkDetector;
+    @inject(WikiLinkProvider)
+    protected readonly linkProvider: WikiLinkProvider;
 
     @inject(WikiLinkNavigator)
     protected readonly linkNavigator: WikiLinkNavigator;
@@ -38,12 +39,17 @@ export class WikiLinkContribution implements FrontendApplicationContribution {
     private readonly toDispose = new DisposableCollection();
 
     async onStart(): Promise<void> {
+        console.log('[WikiLinkContribution] Registering wiki link features');
+
         // Register completion provider for markdown files
-        // Register for both 'markdown' and 'plaintext' since .md files might initially be detected as plaintext
         this.toDispose.push(monaco.languages.registerCompletionItemProvider('markdown', this.completionProvider));
         this.toDispose.push(monaco.languages.registerCompletionItemProvider('plaintext', this.completionProvider));
 
-        // Attach features to markdown editors as they open
+        // Register link provider for markdown files (provides automatic underlines like Foam)
+        this.toDispose.push(monaco.languages.registerLinkProvider('markdown', this.linkProvider));
+        this.toDispose.push(monaco.languages.registerLinkProvider('plaintext', this.linkProvider));
+
+        // Attach navigator to markdown editors as they open
         this.editorManager.onCreated(editor => {
             // Get the MonacoEditor instance (might be wrapped)
             let monacoEditor: MonacoEditor | undefined;
@@ -64,53 +70,15 @@ export class WikiLinkContribution implements FrontendApplicationContribution {
                 const isMarkdown = languageId === 'markdown' || uri?.endsWith('.md');
 
                 if (model && isMarkdown) {
-                    this.linkDetector.attach(monacoEditor);
                     this.linkNavigator.attach(monacoEditor);
                 }
             }
         });
 
-        // Add CSS for wiki link styling
-        this.addWikiLinkStyles();
+        console.log('[WikiLinkContribution] Wiki link features registered');
     }
 
     onStop(): void {
         this.toDispose.dispose();
-    }
-
-    /**
-     * Add CSS styles for wiki links
-     */
-    private addWikiLinkStyles(): void {
-        const style = document.createElement('style');
-        style.textContent = `
-            /* Resolved wiki links - styled like hyperlinks */
-            .wiki-link-resolved {
-                color: var(--vscode-textLink-foreground, #0066cc);
-                text-decoration: underline;
-                cursor: pointer;
-            }
-
-            .wiki-link-resolved:hover {
-                color: var(--vscode-textLink-activeForeground, #004499);
-            }
-
-            /* Unresolved wiki links - styled as warnings */
-            .wiki-link-unresolved {
-                color: var(--vscode-editorWarning-foreground, #ff9900);
-                text-decoration: wavy underline;
-                cursor: not-allowed;
-            }
-
-            /* Dark theme adjustments */
-            .theia-dark .wiki-link-resolved {
-                color: var(--vscode-textLink-foreground, #4daafc);
-            }
-
-            .theia-dark .wiki-link-unresolved {
-                color: var(--vscode-editorWarning-foreground, #ffcc00);
-            }
-        `;
-        document.head.appendChild(style);
     }
 }
