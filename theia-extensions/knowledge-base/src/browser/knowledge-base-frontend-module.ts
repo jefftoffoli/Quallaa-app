@@ -20,15 +20,13 @@ import { WebSocketConnectionProvider } from '@theia/core/lib/browser/messaging';
 import { WikiLinkContribution } from './wiki-links/wiki-link-contribution';
 import { WikiLinkCompletionProvider } from './wiki-links/wiki-link-completion-provider';
 import { WikiLinkProvider } from './wiki-links/wiki-link-provider';
-import { WikiLinkNavigator } from './wiki-links/wiki-link-navigator';
 import { KnowledgeBaseWorkspaceContribution } from './knowledge-base-workspace-contribution';
 import { KnowledgeBaseService, KnowledgeBasePath } from '../common/knowledge-base-protocol';
 
 export default new ContainerModule(bind => {
-    // Wiki link services
+    // Wiki link services - following Foam's pattern: LinkProvider handles everything
     bind(WikiLinkCompletionProvider).toSelf().inSingletonScope();
     bind(WikiLinkProvider).toSelf().inSingletonScope();
-    bind(WikiLinkNavigator).toSelf().inSingletonScope();
 
     // Workspace indexing contribution
     bind(KnowledgeBaseWorkspaceContribution).toSelf().inSingletonScope();
