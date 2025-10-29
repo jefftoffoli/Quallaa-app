@@ -11,10 +11,11 @@
  */
 
 import '../../src/browser/style/wiki-links.css';
+import '../../src/browser/style/backlinks.css';
 
 import { ContainerModule } from '@theia/core/shared/inversify';
-import { FrontendApplicationContribution } from '@theia/core/lib/browser';
-import { CommandContribution } from '@theia/core/lib/common';
+import { FrontendApplicationContribution, WidgetFactory } from '@theia/core/lib/browser';
+import { CommandContribution, MenuContribution } from '@theia/core/lib/common';
 // eslint-disable-next-line deprecation/deprecation
 import { WebSocketConnectionProvider } from '@theia/core/lib/browser/messaging';
 import { WikiLinkContribution } from './wiki-links/wiki-link-contribution';
@@ -22,6 +23,10 @@ import { WikiLinkCompletionProvider } from './wiki-links/wiki-link-completion-pr
 import { WikiLinkProvider } from './wiki-links/wiki-link-provider';
 import { KnowledgeBaseWorkspaceContribution } from './knowledge-base-workspace-contribution';
 import { KnowledgeBaseService, KnowledgeBasePath } from '../common/knowledge-base-protocol';
+import { BacklinksWidget, BACKLINKS_WIDGET_ID } from './backlinks/backlinks-widget';
+import { BacklinksContribution } from './backlinks/backlinks-contribution';
+import { DailyNotesContribution } from './daily-notes/daily-notes-contribution';
+import { QuickSwitcherContribution } from './quick-switcher/quick-switcher-contribution';
 
 export default new ContainerModule(bind => {
     // Wiki link services - following Foam's pattern: LinkProvider handles everything
@@ -36,6 +41,27 @@ export default new ContainerModule(bind => {
     bind(WikiLinkContribution).toSelf().inSingletonScope();
     bind(FrontendApplicationContribution).toService(WikiLinkContribution);
     bind(CommandContribution).toService(WikiLinkContribution);
+
+    // Backlinks panel - following Foam's connections pattern
+    bind(BacklinksWidget).toSelf();
+    bind(WidgetFactory)
+        .toDynamicValue(ctx => ({
+            id: BACKLINKS_WIDGET_ID,
+            createWidget: () => ctx.container.get<BacklinksWidget>(BacklinksWidget),
+        }))
+        .inSingletonScope();
+    bind(BacklinksContribution).toSelf().inSingletonScope();
+    bind(FrontendApplicationContribution).toService(BacklinksContribution);
+    bind(CommandContribution).toService(BacklinksContribution);
+    bind(MenuContribution).toService(BacklinksContribution);
+
+    // Daily notes - following Foam's dated-notes pattern
+    bind(DailyNotesContribution).toSelf().inSingletonScope();
+    bind(CommandContribution).toService(DailyNotesContribution);
+
+    // Quick Switcher - following Foam's workspace-symbol-provider pattern
+    bind(QuickSwitcherContribution).toSelf().inSingletonScope();
+    bind(CommandContribution).toService(QuickSwitcherContribution);
 
     // Connect to backend service via JSON-RPC
     bind(KnowledgeBaseService)

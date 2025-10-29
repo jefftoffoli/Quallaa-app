@@ -57,6 +57,20 @@ export interface WikiLink {
 }
 
 /**
+ * Represents a backlink (incoming link) to a note
+ */
+export interface Backlink {
+    /** Source note URI (the note containing the link) */
+    sourceUri: string;
+    /** Source note title */
+    sourceTitle: string;
+    /** Line number where the link appears */
+    line: number;
+    /** The full line of text containing the link */
+    context: string;
+}
+
+/**
  * Service for indexing and querying notes in the workspace
  */
 export interface KnowledgeBaseService {
@@ -102,4 +116,10 @@ export interface KnowledgeBaseService {
      * Called by frontend with explicit workspace root URI
      */
     indexWorkspace(workspaceRoot: string): Promise<void>;
+
+    /**
+     * Get all backlinks (incoming links) to a note
+     * Following Foam's connections pattern
+     */
+    getBacklinks(noteUri: string): Promise<Backlink[]>;
 }

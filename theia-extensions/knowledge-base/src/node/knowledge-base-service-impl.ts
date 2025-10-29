@@ -14,22 +14,34 @@
 
 import { injectable, postConstruct } from '@theia/core/shared/inversify';
 import URI from '@theia/core/lib/common/uri';
-import { KnowledgeBaseService, Note, WikiLink } from '../common/knowledge-base-protocol';
+import { KnowledgeBaseService, Note, WikiLink, Backlink } from '../common/knowledge-base-protocol';
 import { parseWikiLinks } from '../common/wiki-link-parser';
 import { parseFrontmatter, extractTags } from './frontmatter-parser';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as chokidar from 'chokidar';
 
+/**
+ * Internal structure for tracking backlink details
+ */
+interface BacklinkEntry {
+    sourceUri: string;
+    line: number;
+    context: string;
+}
+
 @injectable()
 export class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
-
     // Index: URI -> Note
     private noteIndex: Map<string, Note> = new Map();
 
     // Reverse indices for fast lookups
     private titleIndex: Map<string, string[]> = new Map(); // normalized title -> URIs[]
     private aliasIndex: Map<string, string[]> = new Map(); // normalized alias -> URIs[]
+
+    // Backlinks index: target URI -> BacklinkEntry[]
+    // Following Foam's connections pattern
+    private backlinksIndex: Map<string, BacklinkEntry[]> = new Map();
 
     private workspaceRoot: URI | undefined;
     private watcher: chokidar.FSWatcher | undefined;
@@ -62,7 +74,7 @@ export class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
                 note =>
                     note.title.toLowerCase().includes(lowerQuery) ||
                     note.basename.toLowerCase().includes(lowerQuery) ||
-                    note.aliases?.some(alias => alias.toLowerCase().includes(lowerQuery)),
+                    note.aliases?.some(alias => alias.toLowerCase().includes(lowerQuery))
             )
             .sort((a, b) => {
                 // Prioritize exact matches
@@ -76,12 +88,8 @@ export class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
                 }
 
                 // Then prioritize starts-with
-                const aStarts =
-                    a.title.toLowerCase().startsWith(lowerQuery) ||
-                    a.basename.toLowerCase().startsWith(lowerQuery);
-                const bStarts =
-                    b.title.toLowerCase().startsWith(lowerQuery) ||
-                    b.basename.toLowerCase().startsWith(lowerQuery);
+                const aStarts = a.title.toLowerCase().startsWith(lowerQuery) || a.basename.toLowerCase().startsWith(lowerQuery);
+                const bStarts = b.title.toLowerCase().startsWith(lowerQuery) || b.basename.toLowerCase().startsWith(lowerQuery);
                 if (aStarts && !bStarts) {
                     return -1;
                 }
@@ -402,6 +410,9 @@ export class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
                 const normalizedAlias = this.normalizeTitle(alias);
                 this.addToIndex(this.aliasIndex, normalizedAlias, uri.toString());
             }
+
+            // Build backlinks for this file's wiki links
+            this.buildBacklinksForFile(uri.toString(), content);
         } catch (error) {
             console.error(`[KnowledgeBase] Error indexing file ${filePath}:`, error);
         }
@@ -431,6 +442,9 @@ export class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
                 this.removeFromReverseIndex(this.aliasIndex, this.normalizeTitle(alias), fileUri);
             }
         }
+
+        // Remove backlinks from this source file
+        this.removeBacklinksFromSource(fileUri);
     }
 
     /**
@@ -544,5 +558,130 @@ export class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
         this.noteIndex.clear();
         this.titleIndex.clear();
         this.aliasIndex.clear();
+        this.backlinksIndex.clear();
+    }
+
+    /**
+     * Get all backlinks (incoming links) to a note
+     * Following Foam's connections pattern
+     */
+    async getBacklinks(noteUri: string): Promise<Backlink[]> {
+        await this.ensureIndexed();
+
+        const entries = this.backlinksIndex.get(noteUri) || [];
+        const backlinks: Backlink[] = [];
+
+        for (const entry of entries) {
+            const sourceNote = this.noteIndex.get(entry.sourceUri);
+            if (sourceNote) {
+                backlinks.push({
+                    sourceUri: entry.sourceUri,
+                    sourceTitle: sourceNote.title,
+                    line: entry.line,
+                    context: entry.context,
+                });
+            }
+        }
+
+        return backlinks;
+    }
+
+    /**
+     * Build backlinks index for a source file
+     * Parses wiki links and adds them to the backlinks index
+     */
+    private buildBacklinksForFile(sourceUri: string, content: string): void {
+        const lines = content.split('\n');
+        const wikiLinks = parseWikiLinks(content);
+
+        for (const link of wikiLinks) {
+            // Find which line the link is on
+            let charCount = 0;
+            let lineNumber = 0;
+            for (let i = 0; i < lines.length; i++) {
+                if (charCount + lines[i].length >= link.start) {
+                    lineNumber = i;
+                    break;
+                }
+                charCount += lines[i].length + 1; // +1 for newline
+            }
+
+            // Get the line context
+            const context = lines[lineNumber] || '';
+
+            // Try to resolve the link to find target URI
+            const targetNote = this.findNoteByTitleSync(link.target);
+            if (targetNote) {
+                this.addBacklink(targetNote.uri, {
+                    sourceUri,
+                    line: lineNumber + 1, // Convert to 1-based line numbers
+                    context: context.trim(),
+                });
+            }
+        }
+    }
+
+    /**
+     * Synchronous version of findNoteByTitle for use during indexing
+     */
+    private findNoteByTitleSync(title: string): Note | undefined {
+        // Remove .md extension if present
+        const cleanTitle = title.replace(/\.md$/i, '');
+
+        // Check if this is a path-based link
+        if (cleanTitle.includes('/') || cleanTitle.includes('\\')) {
+            return this.findNoteByPath(cleanTitle);
+        }
+
+        // Normalize for matching
+        const normalized = this.normalizeTitle(cleanTitle);
+
+        // Try title index
+        const titleMatches = this.titleIndex.get(normalized);
+        if (titleMatches && titleMatches.length > 0) {
+            const notes = titleMatches.map(uri => this.noteIndex.get(uri)!).filter(n => n);
+            if (notes.length > 0) {
+                return this.getMostRecentNote(notes);
+            }
+        }
+
+        // Try alias index
+        const aliasMatches = this.aliasIndex.get(normalized);
+        if (aliasMatches && aliasMatches.length > 0) {
+            const notes = aliasMatches.map(uri => this.noteIndex.get(uri)!).filter(n => n);
+            if (notes.length > 0) {
+                return this.getMostRecentNote(notes);
+            }
+        }
+
+        return undefined;
+    }
+
+    /**
+     * Add a backlink to the index
+     */
+    private addBacklink(targetUri: string, entry: BacklinkEntry): void {
+        const existing = this.backlinksIndex.get(targetUri) || [];
+        // Avoid duplicates
+        const isDuplicate = existing.some(e => e.sourceUri === entry.sourceUri && e.line === entry.line);
+        if (!isDuplicate) {
+            existing.push(entry);
+            this.backlinksIndex.set(targetUri, existing);
+        }
+    }
+
+    /**
+     * Remove all backlinks from a source file
+     */
+    private removeBacklinksFromSource(sourceUri: string): void {
+        // Remove entries where sourceUri matches
+        for (const [targetUri, entries] of this.backlinksIndex.entries()) {
+            const filtered = entries.filter(e => e.sourceUri !== sourceUri);
+            if (filtered.length > 0) {
+                this.backlinksIndex.set(targetUri, filtered);
+            } else {
+                this.backlinksIndex.delete(targetUri);
+            }
+        }
     }
 }

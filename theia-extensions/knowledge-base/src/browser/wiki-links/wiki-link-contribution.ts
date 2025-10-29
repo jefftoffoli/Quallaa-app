@@ -67,11 +67,33 @@ export class WikiLinkContribution implements FrontendApplicationContribution, Co
      */
     registerCommands(registry: CommandRegistry): void {
         registry.registerCommand(CREATE_NOTE_COMMAND, {
-            execute: async (argsString: string) => {
+            execute: async (args: { target: string; sourceUri: string } | string) => {
                 try {
-                    // Parse arguments from command URI
-                    const params = JSON.parse(decodeURIComponent(argsString)) as { target: string; sourceUri: string };
+                    console.log('[WikiLinkContribution] Raw args:', args, 'Type:', typeof args);
+
+                    let params: { target: string; sourceUri: string };
+
+                    // Handle both object and string formats
+                    if (typeof args === 'string') {
+                        try {
+                            params = JSON.parse(decodeURIComponent(args));
+                        } catch (e) {
+                            // Try parsing as-is if decodeURIComponent fails
+                            params = JSON.parse(args);
+                        }
+                    } else if (typeof args === 'object' && args) {
+                        params = args;
+                    } else {
+                        console.error('[WikiLinkContribution] Invalid arguments format');
+                        return;
+                    }
+
                     const { target, sourceUri } = params;
+
+                    if (!target) {
+                        console.error('[WikiLinkContribution] No target specified');
+                        return;
+                    }
 
                     console.log(`[WikiLinkContribution] Creating note: ${target}`);
 
