@@ -23,10 +23,7 @@ export class WikiLinkProvider implements monaco.languages.LinkProvider {
     @inject(KnowledgeBaseService)
     protected readonly knowledgeBaseService: KnowledgeBaseService;
 
-    async provideLinks(
-        model: monaco.editor.ITextModel,
-        token: monaco.CancellationToken
-    ): Promise<monaco.languages.ILinksList | undefined> {
+    async provideLinks(model: monaco.editor.ITextModel, token: monaco.CancellationToken): Promise<monaco.languages.ILinksList | undefined> {
         const languageId = model.getLanguageId();
         const uri = model.uri.toString();
         const isMarkdown = languageId === 'markdown' || uri.endsWith('.md');
@@ -47,17 +44,20 @@ export class WikiLinkProvider implements monaco.languages.LinkProvider {
             // Try to resolve the link
             const resolved = await this.knowledgeBaseService.resolveWikiLink(link.target);
 
+            // Following Foam's pattern: use command URI for unresolved links
+            const linkUrl = resolved
+                ? resolved.uri
+                : `command:knowledge-base.create-note?${encodeURIComponent(
+                      JSON.stringify({
+                          target: link.target,
+                          sourceUri: uri,
+                      })
+                  )}`;
+
             links.push({
-                range: new monaco.Range(
-                    startPos.lineNumber,
-                    startPos.column,
-                    endPos.lineNumber,
-                    endPos.column
-                ),
-                url: resolved ? resolved.uri : undefined,
-                tooltip: resolved
-                    ? `Go to ${link.target}`
-                    : `Create ${link.target} (Cmd+Click)`
+                range: new monaco.Range(startPos.lineNumber, startPos.column, endPos.lineNumber, endPos.column),
+                url: linkUrl,
+                tooltip: resolved ? `Go to ${link.target}` : `Create ${link.target} (Cmd+Click)`,
             });
         }
 
@@ -66,10 +66,7 @@ export class WikiLinkProvider implements monaco.languages.LinkProvider {
         return { links };
     }
 
-    async resolveLink(
-        link: monaco.languages.ILink,
-        token: monaco.CancellationToken
-    ): Promise<monaco.languages.ILink | undefined> {
+    async resolveLink(link: monaco.languages.ILink, token: monaco.CancellationToken): Promise<monaco.languages.ILink | undefined> {
         // Links are already resolved in provideLinks
         return link;
     }

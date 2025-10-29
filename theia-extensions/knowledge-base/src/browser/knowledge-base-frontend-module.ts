@@ -14,6 +14,7 @@ import '../../src/browser/style/wiki-links.css';
 
 import { ContainerModule } from '@theia/core/shared/inversify';
 import { FrontendApplicationContribution } from '@theia/core/lib/browser';
+import { CommandContribution } from '@theia/core/lib/common';
 // eslint-disable-next-line deprecation/deprecation
 import { WebSocketConnectionProvider } from '@theia/core/lib/browser/messaging';
 import { WikiLinkContribution } from './wiki-links/wiki-link-contribution';
@@ -36,10 +37,13 @@ export default new ContainerModule(bind => {
     // Main contribution
     bind(WikiLinkContribution).toSelf().inSingletonScope();
     bind(FrontendApplicationContribution).toService(WikiLinkContribution);
+    bind(CommandContribution).toService(WikiLinkContribution);
 
     // Connect to backend service via JSON-RPC
-    bind(KnowledgeBaseService).toDynamicValue(ctx => {
-        const connection = ctx.container.get(WebSocketConnectionProvider);
-        return connection.createProxy<KnowledgeBaseService>(KnowledgeBasePath);
-    }).inSingletonScope();
+    bind(KnowledgeBaseService)
+        .toDynamicValue(ctx => {
+            const connection = ctx.container.get(WebSocketConnectionProvider);
+            return connection.createProxy<KnowledgeBaseService>(KnowledgeBasePath);
+        })
+        .inSingletonScope();
 });
