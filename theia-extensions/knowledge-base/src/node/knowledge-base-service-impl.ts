@@ -9,41 +9,45 @@
 
 /**
  * Backend implementation of the knowledge base service
+ * Phase 1.3: Enhanced with file watching, frontmatter parsing, and incremental updates
  */
 
-import { injectable, inject } from '@theia/core/shared/inversify';
-import { FileSearchService } from '@theia/file-search/lib/common/file-search-service';
-import { WorkspaceServer } from '@theia/workspace/lib/common/workspace-protocol';
+import { injectable, postConstruct } from '@theia/core/shared/inversify';
 import URI from '@theia/core/lib/common/uri';
 import { KnowledgeBaseService, Note, WikiLink } from '../common/knowledge-base-protocol';
 import { parseWikiLinks } from '../common/wiki-link-parser';
+import { parseFrontmatter, extractTags } from './frontmatter-parser';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as chokidar from 'chokidar';
 
 @injectable()
 export class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
-    @inject(FileSearchService)
-    protected readonly fileSearchService: FileSearchService;
 
-    @inject(WorkspaceServer)
-    protected readonly workspaceServer: WorkspaceServer;
+    // Index: URI -> Note
+    private noteIndex: Map<string, Note> = new Map();
 
-    private noteCache: Map<string, Note> = new Map();
-    private lastIndexTime = 0;
-    private readonly CACHE_DURATION = 5000; // 5 seconds
+    // Reverse indices for fast lookups
+    private titleIndex: Map<string, string[]> = new Map(); // normalized title -> URIs[]
+    private aliasIndex: Map<string, string[]> = new Map(); // normalized alias -> URIs[]
+
     private workspaceRoot: URI | undefined;
+    private watcher: chokidar.FSWatcher | undefined;
+    private isIndexing = false;
+    private indexPromise: Promise<void> | undefined;
+
+    @postConstruct()
+    protected initialize(): void {
+        console.log('[KnowledgeBase] Service initializing...');
+        // Workspace root will be set when first file is opened or by explicit call
+    }
 
     /**
-     * Get all markdown notes in the workspace
+     * Get all notes in the workspace
      */
     async getAllNotes(): Promise<Note[]> {
-        const now = Date.now();
-        if (now - this.lastIndexTime < this.CACHE_DURATION && this.noteCache.size > 0) {
-            return Array.from(this.noteCache.values());
-        }
-
-        await this.indexNotes();
-        return Array.from(this.noteCache.values());
+        await this.ensureIndexed();
+        return Array.from(this.noteIndex.values());
     }
 
     /**
@@ -54,7 +58,12 @@ export class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
         const lowerQuery = query.toLowerCase();
 
         return allNotes
-            .filter(note => note.title.toLowerCase().includes(lowerQuery) || note.basename.toLowerCase().includes(lowerQuery))
+            .filter(
+                note =>
+                    note.title.toLowerCase().includes(lowerQuery) ||
+                    note.basename.toLowerCase().includes(lowerQuery) ||
+                    note.aliases?.some(alias => alias.toLowerCase().includes(lowerQuery)),
+            )
             .sort((a, b) => {
                 // Prioritize exact matches
                 const aExact = a.title.toLowerCase() === lowerQuery || a.basename.toLowerCase() === lowerQuery;
@@ -67,8 +76,12 @@ export class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
                 }
 
                 // Then prioritize starts-with
-                const aStarts = a.title.toLowerCase().startsWith(lowerQuery) || a.basename.toLowerCase().startsWith(lowerQuery);
-                const bStarts = b.title.toLowerCase().startsWith(lowerQuery) || b.basename.toLowerCase().startsWith(lowerQuery);
+                const aStarts =
+                    a.title.toLowerCase().startsWith(lowerQuery) ||
+                    a.basename.toLowerCase().startsWith(lowerQuery);
+                const bStarts =
+                    b.title.toLowerCase().startsWith(lowerQuery) ||
+                    b.basename.toLowerCase().startsWith(lowerQuery);
                 if (aStarts && !bStarts) {
                     return -1;
                 }
@@ -76,8 +89,8 @@ export class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
                     return 1;
                 }
 
-                // Alphabetical
-                return a.title.localeCompare(b.title);
+                // Sort by most recently modified
+                return b.lastModified - a.lastModified;
             })
             .slice(0, 50); // Limit results
     }
@@ -87,47 +100,41 @@ export class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
      * Follows Obsidian-inspired resolution:
      * 1. Exact filename match (case-insensitive)
      * 2. Normalized match (spaces/-/_ equivalent)
-     * 3. Check path if target includes folder (e.g., "Folder/Note")
-     * 4. Most recently modified if still ambiguous
+     * 3. Alias match
+     * 4. Path-based if target includes folder (e.g., "Folder/Note")
+     * 5. Most recently modified if still ambiguous
      */
     async findNoteByTitle(title: string): Promise<Note | undefined> {
-        const allNotes = await this.getAllNotes();
+        await this.ensureIndexed();
 
         // Remove .md extension if present
         const cleanTitle = title.replace(/\.md$/i, '');
-        const lowerTitle = cleanTitle.toLowerCase();
 
         // Check if this is a path-based link (contains / or \)
         if (cleanTitle.includes('/') || cleanTitle.includes('\\')) {
-            return this.findNoteByPath(allNotes, cleanTitle);
+            return this.findNoteByPath(cleanTitle);
         }
 
-        // 1. Try exact basename match first (most common case)
-        let matches = allNotes.filter(n => n.basename.toLowerCase() === lowerTitle);
-        if (matches.length === 1) {
-            return matches[0];
-        }
-        if (matches.length > 1) {
-            return this.getMostRecentNote(matches);
+        // Normalize for matching
+        const normalized = this.normalizeTitle(cleanTitle);
+
+        // 1. Try title index
+        const titleMatches = this.titleIndex.get(normalized);
+        if (titleMatches && titleMatches.length > 0) {
+            if (titleMatches.length === 1) {
+                return this.noteIndex.get(titleMatches[0]);
+            }
+            // Multiple matches - return most recent
+            return this.getMostRecentNote(titleMatches.map(uri => this.noteIndex.get(uri)!));
         }
 
-        // 2. Try normalized match (treat spaces, hyphens, underscores as equivalent)
-        const normalized = this.normalizeTitle(lowerTitle);
-        matches = allNotes.filter(n => this.normalizeTitle(n.basename.toLowerCase()) === normalized);
-        if (matches.length === 1) {
-            return matches[0];
-        }
-        if (matches.length > 1) {
-            return this.getMostRecentNote(matches);
-        }
-
-        // 3. Try exact title match (from frontmatter, future enhancement)
-        matches = allNotes.filter(n => n.title.toLowerCase() === lowerTitle);
-        if (matches.length === 1) {
-            return matches[0];
-        }
-        if (matches.length > 1) {
-            return this.getMostRecentNote(matches);
+        // 2. Try alias index
+        const aliasMatches = this.aliasIndex.get(normalized);
+        if (aliasMatches && aliasMatches.length > 0) {
+            if (aliasMatches.length === 1) {
+                return this.noteIndex.get(aliasMatches[0]);
+            }
+            return this.getMostRecentNote(aliasMatches.map(uri => this.noteIndex.get(uri)!));
         }
 
         return undefined;
@@ -136,11 +143,11 @@ export class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
     /**
      * Find note by path (e.g., "Folder/Note")
      */
-    private findNoteByPath(allNotes: Note[], pathTarget: string): Note | undefined {
+    private findNoteByPath(pathTarget: string): Note | undefined {
         const normalized = pathTarget.toLowerCase().replace(/\\/g, '/');
 
         // Try exact path match
-        const matches = allNotes.filter(n => {
+        const matches = Array.from(this.noteIndex.values()).filter(n => {
             const notePath = n.path.toLowerCase().replace(/\\/g, '/');
             return notePath.endsWith(normalized) || notePath.endsWith(normalized + '.md');
         });
@@ -159,17 +166,14 @@ export class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
      * Normalize title for matching (spaces, hyphens, underscores are equivalent)
      */
     private normalizeTitle(title: string): string {
-        return title.replace(/[\s\-_]+/g, '-');
+        return title.toLowerCase().replace(/[\s\-_]+/g, '-');
     }
 
     /**
      * Get the most recently modified note from a list
-     * Used for disambiguating when multiple notes match
      */
     private getMostRecentNote(notes: Note[]): Note {
-        // For now, just return the first one
-        // TODO: Add lastModified field to Note interface and use that
-        return notes[0];
+        return notes.reduce((most, current) => (current.lastModified > most.lastModified ? current : most));
     }
 
     /**
@@ -187,8 +191,8 @@ export class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
     }
 
     /**
-     * Get the URI where a new note should be created
-     * Returns the URI but does NOT create the file (frontend handles creation)
+     * Create a new note at the specified location
+     * Returns the URI of the created note
      */
     async createNote(target: string, currentFileUri?: string): Promise<string> {
         // Remove .md extension if present
@@ -210,104 +214,306 @@ export class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
             noteUri = baseUri.resolve(cleanTarget + '.md');
         }
 
-        // Return URI for frontend to create
-        console.log(`Will create new note at: ${noteUri.toString()}`);
-
-        // Invalidate cache so it picks up the new file once created
-        this.lastIndexTime = 0;
-
+        console.log(`[KnowledgeBase] Will create new note at: ${noteUri.toString()}`);
         return noteUri.toString();
     }
 
     /**
      * Get the default location for new notes
-     * Uses workspace root for now (derived from indexed notes)
-     * TODO: Add preference knowledgeBase.defaultNoteLocation
      */
     async getDefaultNoteLocation(): Promise<string> {
         // Ensure we have indexed at least once
         if (!this.workspaceRoot) {
-            await this.getAllNotes();
+            await this.ensureIndexed();
         }
 
         if (!this.workspaceRoot) {
             throw new Error('No workspace root found - no notes indexed yet');
         }
 
-        // Use workspace root
-        // TODO: Check preference for custom default location
         return this.workspaceRoot.toString();
     }
 
     /**
-     * Set the workspace root from a file URI
+     * Index a workspace
+     * Called by frontend with explicit workspace root URI
      */
-    async setWorkspaceFromFile(fileUri: string): Promise<void> {
-        const uri = new URI(fileUri);
-        // Get the parent directory (workspace root)
-        this.workspaceRoot = uri.parent;
-        console.log('[KnowledgeBase] Workspace root set to:', this.workspaceRoot.toString());
-        // Clear cache to force re-indexing
-        this.lastIndexTime = 0;
+    async indexWorkspace(workspaceRootUri: string): Promise<void> {
+        const newRoot = new URI(workspaceRootUri);
+
+        // Only re-index if workspace changed
+        if (this.workspaceRoot && this.workspaceRoot.toString() === newRoot.toString()) {
+            console.log('[KnowledgeBase] Workspace already indexed:', newRoot.toString());
+            return;
+        }
+
+        console.log('[KnowledgeBase] Indexing workspace:', newRoot.toString());
+        this.workspaceRoot = newRoot;
+
+        // Stop existing watcher
+        if (this.watcher) {
+            await this.watcher.close();
+            this.watcher = undefined;
+        }
+
+        // Clear indices and re-index
+        this.clearIndices();
+        await this.startIndexing();
     }
 
     /**
-     * Index all markdown files in the workspace
+     * Ensure workspace is indexed before operations
      */
-    private async indexNotes(): Promise<void> {
-        this.noteCache.clear();
+    private async ensureIndexed(): Promise<void> {
+        if (this.indexPromise) {
+            await this.indexPromise;
+            return;
+        }
+
+        if (this.noteIndex.size === 0 && this.workspaceRoot) {
+            await this.startIndexing();
+        }
+    }
+
+    /**
+     * Start indexing and file watching
+     */
+    private async startIndexing(): Promise<void> {
+        if (this.isIndexing || !this.workspaceRoot) {
+            return;
+        }
+
+        this.isIndexing = true;
+        this.indexPromise = this.performIndexing();
 
         try {
-            if (!this.workspaceRoot) {
-                console.warn('[KnowledgeBase] No workspace root set - cannot index notes');
-                return;
+            await this.indexPromise;
+            this.startFileWatching();
+        } finally {
+            this.isIndexing = false;
+            this.indexPromise = undefined;
+        }
+    }
+
+    /**
+     * Perform the actual indexing of markdown files in the workspace
+     */
+    private async performIndexing(): Promise<void> {
+        if (!this.workspaceRoot) {
+            console.warn('[KnowledgeBase] No workspace root - cannot index');
+            return;
+        }
+
+        const fsPath = this.workspaceRoot.path.fsPath();
+        console.log('[KnowledgeBase] Indexing workspace:', fsPath);
+
+        const startTime = Date.now();
+        let fileCount = 0;
+
+        try {
+            const files = this.findMarkdownFilesRecursive(fsPath);
+
+            for (const filePath of files) {
+                await this.indexFile(filePath);
+                fileCount++;
             }
 
-            // Convert URI to filesystem path
-            const fsPath = this.workspaceRoot.path.fsPath();
-            console.log('[KnowledgeBase] Searching for .md files in:', fsPath);
+            const duration = Date.now() - startTime;
+            console.log(`[KnowledgeBase] Indexed ${fileCount} files in ${duration}ms`);
+        } catch (error) {
+            console.error('[KnowledgeBase] Error indexing workspace:', error);
+        }
+    }
 
-            // Recursively find all .md files
-            const findMarkdownFiles = (dir: string): string[] => {
-                const files: string[] = [];
-                try {
-                    const entries = fs.readdirSync(dir, { withFileTypes: true });
-                    for (const entry of entries) {
-                        const fullPath = path.join(dir, entry.name);
-                        if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'node_modules') {
-                            files.push(...findMarkdownFiles(fullPath));
-                        } else if (entry.isFile() && entry.name.endsWith('.md')) {
-                            files.push(fullPath);
-                        }
+    /**
+     * Recursively find all .md files
+     */
+    private findMarkdownFilesRecursive(dir: string): string[] {
+        const files: string[] = [];
+
+        try {
+            const entries = fs.readdirSync(dir, { withFileTypes: true });
+
+            for (const entry of entries) {
+                const fullPath = path.join(dir, entry.name);
+
+                if (entry.isDirectory()) {
+                    // Skip hidden folders and node_modules
+                    if (!entry.name.startsWith('.') && entry.name !== 'node_modules') {
+                        files.push(...this.findMarkdownFilesRecursive(fullPath));
                     }
-                } catch (err) {
-                    console.error('[KnowledgeBase] Error reading directory:', dir, err);
+                } else if (entry.isFile() && entry.name.endsWith('.md')) {
+                    files.push(fullPath);
                 }
-                return files;
+            }
+        } catch (error) {
+            console.error(`[KnowledgeBase] Error reading directory ${dir}:`, error);
+        }
+
+        return files;
+    }
+
+    /**
+     * Index a single file
+     */
+    private async indexFile(filePath: string): Promise<void> {
+        try {
+            const uri = new URI('file://' + filePath);
+            const basename = uri.path.base.replace(/\.md$/, '');
+
+            // Get file stats for lastModified
+            const stats = fs.statSync(filePath);
+
+            // Read and parse file content
+            const content = fs.readFileSync(filePath, 'utf-8');
+            const parsed = parseFrontmatter(content);
+
+            // Extract metadata
+            const title = parsed.frontmatter.title || basename;
+            const aliases = parsed.frontmatter.aliases || [];
+            const tags = extractTags(content);
+
+            const note: Note = {
+                uri: uri.toString(),
+                title,
+                basename,
+                path: uri.path.toString(),
+                lastModified: stats.mtimeMs,
+                aliases,
+                tags,
+                frontmatter: parsed.frontmatter,
             };
 
-            const results = findMarkdownFiles(fsPath);
-            console.log('[KnowledgeBase] Found', results.length, 'markdown files in', fsPath);
+            // Update main index
+            this.noteIndex.set(uri.toString(), note);
 
-            for (const result of results) {
-                // Convert filesystem path to file:// URI
-                const uri = new URI('file://' + result);
-                const basename = uri.path.base;
-                const name = basename.replace(/\.md$/, '');
+            // Update title index
+            const normalizedTitle = this.normalizeTitle(title);
+            this.addToIndex(this.titleIndex, normalizedTitle, uri.toString());
 
-                const note: Note = {
-                    uri: uri.toString(),
-                    title: name, // TODO: Extract from frontmatter in future
-                    basename: name,
-                    path: uri.path.toString(),
-                };
-
-                this.noteCache.set(uri.toString(), note);
+            // Also index basename if different from title
+            if (basename !== title) {
+                const normalizedBasename = this.normalizeTitle(basename);
+                this.addToIndex(this.titleIndex, normalizedBasename, uri.toString());
             }
 
-            this.lastIndexTime = Date.now();
+            // Update alias index
+            for (const alias of aliases) {
+                const normalizedAlias = this.normalizeTitle(alias);
+                this.addToIndex(this.aliasIndex, normalizedAlias, uri.toString());
+            }
         } catch (error) {
-            console.error('Failed to index notes:', error);
+            console.error(`[KnowledgeBase] Error indexing file ${filePath}:`, error);
         }
+    }
+
+    /**
+     * Remove a file from the index
+     */
+    private removeFromIndex(fileUri: string): void {
+        const note = this.noteIndex.get(fileUri);
+        if (!note) {
+            return;
+        }
+
+        // Remove from main index
+        this.noteIndex.delete(fileUri);
+
+        // Remove from title index
+        this.removeFromReverseIndex(this.titleIndex, this.normalizeTitle(note.title), fileUri);
+        if (note.basename !== note.title) {
+            this.removeFromReverseIndex(this.titleIndex, this.normalizeTitle(note.basename), fileUri);
+        }
+
+        // Remove from alias index
+        if (note.aliases) {
+            for (const alias of note.aliases) {
+                this.removeFromReverseIndex(this.aliasIndex, this.normalizeTitle(alias), fileUri);
+            }
+        }
+    }
+
+    /**
+     * Add entry to a reverse index
+     */
+    private addToIndex(index: Map<string, string[]>, key: string, value: string): void {
+        const existing = index.get(key) || [];
+        if (!existing.includes(value)) {
+            existing.push(value);
+        }
+        index.set(key, existing);
+    }
+
+    /**
+     * Remove entry from a reverse index
+     */
+    private removeFromReverseIndex(index: Map<string, string[]>, key: string, value: string): void {
+        const existing = index.get(key);
+        if (existing) {
+            const filtered = existing.filter(v => v !== value);
+            if (filtered.length > 0) {
+                index.set(key, filtered);
+            } else {
+                index.delete(key);
+            }
+        }
+    }
+
+    /**
+     * Start file watching for real-time updates
+     */
+    private startFileWatching(): void {
+        if (!this.workspaceRoot || this.watcher) {
+            return;
+        }
+
+        const fsPath = this.workspaceRoot.path.fsPath();
+
+        console.log('[KnowledgeBase] Starting file watcher on:', fsPath);
+
+        this.watcher = chokidar.watch('**/*.md', {
+            cwd: fsPath,
+            ignoreInitial: true, // Don't fire for initial files
+            ignored: ['**/node_modules/**', '**/.git/**', '**/.*'],
+            persistent: true,
+            awaitWriteFinish: {
+                stabilityThreshold: 100,
+                pollInterval: 50,
+            },
+        });
+
+        this.watcher.on('add', async filePath => {
+            const fullPath = path.join(fsPath, filePath);
+            console.log('[KnowledgeBase] File added:', filePath);
+            await this.indexFile(fullPath);
+        });
+
+        this.watcher.on('change', async filePath => {
+            const fullPath = path.join(fsPath, filePath);
+            console.log('[KnowledgeBase] File changed:', filePath);
+            const uri = new URI('file://' + fullPath);
+            this.removeFromIndex(uri.toString());
+            await this.indexFile(fullPath);
+        });
+
+        this.watcher.on('unlink', filePath => {
+            const fullPath = path.join(fsPath, filePath);
+            console.log('[KnowledgeBase] File deleted:', filePath);
+            const uri = new URI('file://' + fullPath);
+            this.removeFromIndex(uri.toString());
+        });
+
+        this.watcher.on('error', error => {
+            console.error('[KnowledgeBase] File watcher error:', error);
+        });
+    }
+
+    /**
+     * Clear all indices
+     */
+    private clearIndices(): void {
+        this.noteIndex.clear();
+        this.titleIndex.clear();
+        this.aliasIndex.clear();
     }
 }

@@ -12,3 +12,10 @@ This is a test workspace for testing wiki link functionality in Quallaa.
 
 - [[Project Ideas]]
 - [[Meeting Notes]]
+
+[[foo]]
+[[bar]]
+[[bar]]
+[[My Custom TestA]]
+
+

@@ -28,28 +28,31 @@ See: [[Monorepo Structure]], [[Extension Structure Decision]]
 
 **Deliverable:** ✅ Working Theia fork with our custom package
 
-### 1.2 Basic Wiki Links ⬅️ NEXT
+### 1.2 Basic Wiki Links ✅
 
 Implement: [[Wiki Links]]
 
-- [ ] Wiki link parser
-- [ ] Monaco completion provider for `[[`
-- [ ] Basic link navigation
-- [ ] Broken link detection
+- ✅ Wiki link parser
+- ✅ Monaco completion provider for `[[`
+- ✅ Basic link navigation
+- ✅ Broken link detection
 
-**Deliverable:** Can type `[[Note]]` and get autocomplete
+**Deliverable:** Can type `[[Note]]` and get autocomplete ✅
 
-### 1.3 Note Indexing Service
+### 1.3 Note Indexing Service ✅
 
 Implement: [[Frontend and Backend Communication]]
 
-- [ ] Backend service to scan .md files
-- [ ] Frontend service to query index
-- [ ] Real-time updates on file changes
+- ✅ Backend service to scan .md files
+- ✅ Frontend service to query index
+- ✅ Real-time updates on file changes
+- ✅ Frontmatter parsing (title, aliases, tags)
+- ✅ File watching with chokidar
+- ✅ Incremental index updates
 
-**Deliverable:** Fast note lookup by title
+**Deliverable:** Fast note lookup by title ✅
 
-## Phase 2: Knowledge Features
+## Phase 2: Knowledge Features ⬅️ NEXT
 
 ### 2.1 Backlinks Panel
 

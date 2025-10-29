@@ -27,6 +27,15 @@ export interface Note {
     basename: string;
     /** Full file path */
     path: string;
+    /** Last modified timestamp (Unix milliseconds) */
+    lastModified: number;
+    /** Aliases from frontmatter (alternative names for this note) */
+    aliases?: string[];
+    /** Tags from frontmatter or content */
+    tags?: string[];
+    /** Full frontmatter data (for future extensions) */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    frontmatter?: Record<string, any>;
 }
 
 /**
@@ -89,8 +98,8 @@ export interface KnowledgeBaseService {
     getDefaultNoteLocation(): Promise<string>;
 
     /**
-     * Set the workspace root from a file URI
-     * Allows the frontend to tell the backend where to search for notes
+     * Index a workspace
+     * Called by frontend with explicit workspace root URI
      */
-    setWorkspaceFromFile(fileUri: string): Promise<void>;
+    indexWorkspace(workspaceRoot: string): Promise<void>;
 }

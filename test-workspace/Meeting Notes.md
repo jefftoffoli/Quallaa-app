@@ -9,3 +9,7 @@ Discussed [[Wiki Links]] implementation:
 - Autocomplete behavior
 
 Next steps: [[Index]]
+
+[[foo]]
+
+[[]]
