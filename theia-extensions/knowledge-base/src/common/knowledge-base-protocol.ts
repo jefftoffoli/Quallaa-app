@@ -71,6 +71,39 @@ export interface Backlink {
 }
 
 /**
+ * Represents a node in the knowledge graph
+ * Following Foam's dataviz pattern
+ */
+export interface GraphNode {
+    /** Unique identifier (note URI) */
+    id: string;
+    /** Display label (note title) */
+    label: string;
+    /** Node type: note (existing) or placeholder (unresolved link) */
+    type: 'note' | 'placeholder';
+}
+
+/**
+ * Represents an edge (link) in the knowledge graph
+ * Following Foam's dataviz pattern
+ */
+export interface GraphEdge {
+    /** Source note URI */
+    source: string;
+    /** Target note URI */
+    target: string;
+}
+
+/**
+ * Complete graph data structure for visualization
+ * Following Foam's dataviz pattern
+ */
+export interface GraphData {
+    nodes: GraphNode[];
+    links: GraphEdge[];
+}
+
+/**
  * Service for indexing and querying notes in the workspace
  */
 export interface KnowledgeBaseService {
@@ -122,4 +155,11 @@ export interface KnowledgeBaseService {
      * Following Foam's connections pattern
      */
     getBacklinks(noteUri: string): Promise<Backlink[]>;
+
+    /**
+     * Get the complete knowledge graph
+     * Returns all notes as nodes and wiki links as edges
+     * Following Foam's dataviz pattern
+     */
+    getGraphData(): Promise<GraphData>;
 }

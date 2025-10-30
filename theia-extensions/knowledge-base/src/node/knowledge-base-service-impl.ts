@@ -684,4 +684,69 @@ export class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
             }
         }
     }
+
+    /**
+     * Get the complete knowledge graph
+     * Following Foam's dataviz pattern
+     */
+    async getGraphData(): Promise<import('../common/knowledge-base-protocol').GraphData> {
+        await this.ensureIndexed();
+
+        const nodes: import('../common/knowledge-base-protocol').GraphNode[] = [];
+        const links: import('../common/knowledge-base-protocol').GraphEdge[] = [];
+        const nodeIds = new Set<string>();
+        const placeholderIds = new Set<string>();
+
+        // Create nodes for all indexed notes
+        for (const note of this.noteIndex.values()) {
+            nodes.push({
+                id: note.uri,
+                label: note.title,
+                type: 'note',
+            });
+            nodeIds.add(note.uri);
+        }
+
+        // Parse wiki links from all notes to create edges
+        for (const note of this.noteIndex.values()) {
+            try {
+                const content = fs.readFileSync(new URI(note.uri).path.fsPath(), 'utf8');
+                const wikiLinks = parseWikiLinks(content);
+
+                for (const link of wikiLinks) {
+                    // Try to resolve the link
+                    const targetNote = this.findNoteByTitleSync(link.target);
+
+                    if (targetNote) {
+                        // Resolved link - create edge to existing note
+                        links.push({
+                            source: note.uri,
+                            target: targetNote.uri,
+                        });
+                    } else {
+                        // Unresolved link - create placeholder node and edge
+                        const placeholderId = `placeholder:${link.target}`;
+
+                        if (!placeholderIds.has(placeholderId)) {
+                            nodes.push({
+                                id: placeholderId,
+                                label: link.target,
+                                type: 'placeholder',
+                            });
+                            placeholderIds.add(placeholderId);
+                        }
+
+                        links.push({
+                            source: note.uri,
+                            target: placeholderId,
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error(`[KnowledgeBase] Error parsing links for graph from ${note.uri}:`, error);
+            }
+        }
+
+        return { nodes, links };
+    }
 }

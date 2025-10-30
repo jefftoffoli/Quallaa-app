@@ -12,6 +12,7 @@
 
 import '../../src/browser/style/wiki-links.css';
 import '../../src/browser/style/backlinks.css';
+import '../../src/browser/style/graph.css';
 
 import { ContainerModule } from '@theia/core/shared/inversify';
 import { FrontendApplicationContribution, WidgetFactory } from '@theia/core/lib/browser';
@@ -27,6 +28,8 @@ import { BacklinksWidget, BACKLINKS_WIDGET_ID } from './backlinks/backlinks-widg
 import { BacklinksContribution } from './backlinks/backlinks-contribution';
 import { DailyNotesContribution } from './daily-notes/daily-notes-contribution';
 import { QuickSwitcherContribution } from './quick-switcher/quick-switcher-contribution';
+import { GraphWidget, GRAPH_WIDGET_ID } from './graph/graph-widget';
+import { GraphContribution } from './graph/graph-contribution';
 
 export default new ContainerModule(bind => {
     // Wiki link services - following Foam's pattern: LinkProvider handles everything
@@ -62,6 +65,19 @@ export default new ContainerModule(bind => {
     // Quick Switcher - following Foam's workspace-symbol-provider pattern
     bind(QuickSwitcherContribution).toSelf().inSingletonScope();
     bind(CommandContribution).toService(QuickSwitcherContribution);
+
+    // Knowledge Graph - following Foam's dataviz pattern
+    bind(GraphWidget).toSelf();
+    bind(WidgetFactory)
+        .toDynamicValue(ctx => ({
+            id: GRAPH_WIDGET_ID,
+            createWidget: () => ctx.container.get<GraphWidget>(GraphWidget),
+        }))
+        .inSingletonScope();
+    bind(GraphContribution).toSelf().inSingletonScope();
+    bind(FrontendApplicationContribution).toService(GraphContribution);
+    bind(CommandContribution).toService(GraphContribution);
+    bind(MenuContribution).toService(GraphContribution);
 
     // Connect to backend service via JSON-RPC
     bind(KnowledgeBaseService)
