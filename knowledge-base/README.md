@@ -21,14 +21,34 @@ knowledge-base/
 
 ## 🎯 Project Vision
 
-Core concept, goals, and business model for the knowledge-first IDE:
+Core concept, goals, and business model for the platform:
+
+### Platform Strategy
+
+- [[Platform Strategy - Unified Vision]] - Multi-product platform overview and
+  strategic framework
+- [[Quallaa + HITL-GAN Synergies]] - Detailed analysis of cross-product value
+  creation
+
+### Product Visions
+
+**Quallaa IDE (Product #1):**
 
 - [[Project Vision - Knowledge-First IDE]] - Core vision and positioning
 - [[Monetization Strategy - AI Cloud Services]] - Business model and revenue
   strategy
 - [[Natural Language Developers]] - Target audience
 - [[Obsidian-Like Experience]] - UX goals
-- [[Progressive Disclosure Pattern]] - Complexity management approach
+
+**HITL-GAN Platform (Product #2):**
+
+- [[HITL-GAN Platform - Business Proposal]] - Complete business and technical
+  proposal
+
+### Archived Concepts
+
+- [[Progressive Disclosure Pattern]] - Complexity management approach (decided
+  against)
 
 ## 🏗️ Architecture
 

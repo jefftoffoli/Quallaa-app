@@ -6,9 +6,9 @@
 
 Quallaa follows the proven "open core" monetization model used successfully by:
 
-- **Obsidian**: Free app, paid Sync ($10/mo) and Publish ($20/mo)
-- **GitHub**: Free repos, paid Actions/Copilot ($10-20/mo)
-- **Notion**: Free personal, paid AI features ($10/mo)
+- **Obsidian**: Free app, paid Sync and Publish tiers
+- **GitHub**: Free repos, paid Actions/Copilot tiers
+- **Notion**: Free personal, paid AI features
 - **LogSeq**: Free app, paid Sync
 
 ## The Value Split
