@@ -67,7 +67,7 @@ default behaviors.
 
 - 5 default templates: Blank, Meeting Notes, Project Note, Research Note, Daily
   Log
-- 13 Foam-compatible template variables (date, time, title, etc.)
+- 13 template variables (date, time, title, etc.)
 - Command: "Knowledge Base: Create Note from Template"
 - Interactive workflow with template picker and title input
 - Automatic filename slugification
