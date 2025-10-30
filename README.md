@@ -44,9 +44,6 @@ default behaviors.
 
 ## Knowledge Base Extension
 
-Quallaa's Knowledge Base extension achieves **87.5% feature parity with Foam**,
-implementing 7 of 8 core knowledge management features:
-
 ### ✅ Implemented Features
 
 **Knowledge Graph**
