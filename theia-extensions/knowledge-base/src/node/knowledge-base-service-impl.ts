@@ -749,4 +749,79 @@ export class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
 
         return { nodes, links };
     }
+
+    /**
+     * Get all tags in the workspace with their associated notes
+     * Following Foam's tags pattern
+     */
+    async getTagsIndex(): Promise<import('../common/knowledge-base-protocol').TagEntry[]> {
+        await this.ensureIndexed();
+
+        // Build tag index from all notes
+        const tagMap = new Map<string, Set<string>>();
+
+        for (const note of this.noteIndex.values()) {
+            if (note.tags && note.tags.length > 0) {
+                for (const tag of note.tags) {
+                    // Normalize tag (remove # if present, lowercase)
+                    const normalizedTag = tag.replace(/^#/, '').toLowerCase();
+
+                    if (!tagMap.has(normalizedTag)) {
+                        tagMap.set(normalizedTag, new Set());
+                    }
+                    tagMap.get(normalizedTag)!.add(note.uri);
+                }
+            }
+        }
+
+        // Convert to TagEntry array, sorted by count (most popular first)
+        const tagEntries: import('../common/knowledge-base-protocol').TagEntry[] = [];
+        for (const [tag, noteUris] of tagMap.entries()) {
+            tagEntries.push({
+                tag,
+                count: noteUris.size,
+                noteUris: Array.from(noteUris),
+            });
+        }
+
+        // Sort by count descending, then alphabetically
+        tagEntries.sort((a, b) => {
+            if (a.count !== b.count) {
+                return b.count - a.count;
+            }
+            return a.tag.localeCompare(b.tag);
+        });
+
+        return tagEntries;
+    }
+
+    /**
+     * Get all notes that have a specific tag
+     * @param tag - Tag name (with or without # prefix)
+     */
+    async getNotesWithTag(tag: string): Promise<import('../common/knowledge-base-protocol').Note[]> {
+        await this.ensureIndexed();
+
+        // Normalize tag (remove # if present, lowercase)
+        const normalizedTag = tag.replace(/^#/, '').toLowerCase();
+
+        const notesWithTag: import('../common/knowledge-base-protocol').Note[] = [];
+
+        for (const note of this.noteIndex.values()) {
+            if (note.tags && note.tags.length > 0) {
+                // Check if any of the note's tags match (case-insensitive)
+                const hasTag = note.tags.some(
+                    t => t.replace(/^#/, '').toLowerCase() === normalizedTag
+                );
+                if (hasTag) {
+                    notesWithTag.push(note);
+                }
+            }
+        }
+
+        // Sort by title
+        notesWithTag.sort((a, b) => a.title.localeCompare(b.title));
+
+        return notesWithTag;
+    }
 }

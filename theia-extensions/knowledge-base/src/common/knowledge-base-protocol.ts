@@ -104,6 +104,18 @@ export interface GraphData {
 }
 
 /**
+ * Represents a tag with its associated notes
+ */
+export interface TagEntry {
+    /** Tag name (without # prefix) */
+    tag: string;
+    /** Number of notes with this tag */
+    count: number;
+    /** URIs of notes with this tag */
+    noteUris: string[];
+}
+
+/**
  * Service for indexing and querying notes in the workspace
  */
 export interface KnowledgeBaseService {
@@ -162,4 +174,17 @@ export interface KnowledgeBaseService {
      * Following Foam's dataviz pattern
      */
     getGraphData(): Promise<GraphData>;
+
+    /**
+     * Get all tags in the workspace with their associated notes
+     * Returns a map of tag name to TagEntry
+     * Following Foam's tags pattern
+     */
+    getTagsIndex(): Promise<TagEntry[]>;
+
+    /**
+     * Get all notes that have a specific tag
+     * @param tag - Tag name (with or without # prefix)
+     */
+    getNotesWithTag(tag: string): Promise<Note[]>;
 }

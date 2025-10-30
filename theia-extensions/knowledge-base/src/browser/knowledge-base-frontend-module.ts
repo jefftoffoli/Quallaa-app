@@ -13,6 +13,7 @@
 import '../../src/browser/style/wiki-links.css';
 import '../../src/browser/style/backlinks.css';
 import '../../src/browser/style/graph.css';
+import '../../src/browser/style/tags.css';
 
 import { ContainerModule } from '@theia/core/shared/inversify';
 import { FrontendApplicationContribution, WidgetFactory } from '@theia/core/lib/browser';
@@ -30,6 +31,9 @@ import { DailyNotesContribution } from './daily-notes/daily-notes-contribution';
 import { QuickSwitcherContribution } from './quick-switcher/quick-switcher-contribution';
 import { GraphWidget, GRAPH_WIDGET_ID } from './graph/graph-widget';
 import { GraphContribution } from './graph/graph-contribution';
+import { TagsWidget, TAGS_WIDGET_ID } from './tags/tags-widget';
+import { TagsContribution } from './tags/tags-contribution';
+import { TemplateContribution } from './templates/template-contribution';
 
 export default new ContainerModule(bind => {
     // Wiki link services - following Foam's pattern: LinkProvider handles everything
@@ -78,6 +82,23 @@ export default new ContainerModule(bind => {
     bind(FrontendApplicationContribution).toService(GraphContribution);
     bind(CommandContribution).toService(GraphContribution);
     bind(MenuContribution).toService(GraphContribution);
+
+    // Tags Browser - following Foam's tags pattern
+    bind(TagsWidget).toSelf();
+    bind(WidgetFactory)
+        .toDynamicValue(ctx => ({
+            id: TAGS_WIDGET_ID,
+            createWidget: () => ctx.container.get<TagsWidget>(TagsWidget),
+        }))
+        .inSingletonScope();
+    bind(TagsContribution).toSelf().inSingletonScope();
+    bind(FrontendApplicationContribution).toService(TagsContribution);
+    bind(CommandContribution).toService(TagsContribution);
+    bind(MenuContribution).toService(TagsContribution);
+
+    // Note Templates - following Foam's templates pattern
+    bind(TemplateContribution).toSelf().inSingletonScope();
+    bind(CommandContribution).toService(TemplateContribution);
 
     // Connect to backend service via JSON-RPC
     bind(KnowledgeBaseService)

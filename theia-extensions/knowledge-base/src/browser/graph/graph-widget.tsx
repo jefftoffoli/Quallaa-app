@@ -8,8 +8,8 @@
  ********************************************************************************/
 
 /**
- * Knowledge Graph visualization widget
- * Simplified view following backlinks panel pattern
+ * Knowledge Graph visualization widget using D3.js force-directed graph
+ * Implements Foam-style graph visualization with interactive nodes and edges
  */
 
 import { injectable, inject, postConstruct } from '@theia/core/shared/inversify';
@@ -17,8 +17,24 @@ import { BaseWidget, Message } from '@theia/core/lib/browser/widgets';
 import { OpenerService, open } from '@theia/core/lib/browser';
 import { KnowledgeBaseService, GraphData, GraphNode } from '../../common/knowledge-base-protocol';
 import URI from '@theia/core/lib/common/uri';
+import * as d3 from 'd3';
 
 export const GRAPH_WIDGET_ID = 'knowledge-base-graph-widget';
+
+// D3 simulation types
+interface SimulationNode extends GraphNode {
+    x?: number;
+    y?: number;
+    fx?: number | null;
+    fy?: number | null;
+    vx?: number;
+    vy?: number;
+}
+
+interface SimulationLink {
+    source: string | SimulationNode;
+    target: string | SimulationNode;
+}
 
 @injectable()
 export class GraphWidget extends BaseWidget {
@@ -32,6 +48,8 @@ export class GraphWidget extends BaseWidget {
     protected readonly openerService: OpenerService;
 
     private graphData: GraphData | undefined;
+    private simulation: d3.Simulation<SimulationNode, SimulationLink> | undefined;
+    private svg: d3.Selection<SVGSVGElement, unknown, null, undefined> | undefined;
 
     constructor() {
         super();
@@ -70,6 +88,14 @@ export class GraphWidget extends BaseWidget {
         this.render();
     }
 
+    protected override onBeforeDetach(msg: Message): void {
+        super.onBeforeDetach(msg);
+        // Stop simulation when widget is detached
+        if (this.simulation) {
+            this.simulation.stop();
+        }
+    }
+
     protected render(): void {
         this.node.innerHTML = '';
 
@@ -89,6 +115,7 @@ export class GraphWidget extends BaseWidget {
             return;
         }
 
+        // Create container
         const container = document.createElement('div');
         container.className = 'graph-container';
 
@@ -106,97 +133,188 @@ export class GraphWidget extends BaseWidget {
         `;
         container.appendChild(summary);
 
-        // Group nodes by their connections
-        const nodeConnections = this.getNodeConnections();
-
-        // Sort nodes by number of connections (most connected first)
-        const sortedNodes = [...noteNodes].sort((a, b) => {
-            const aConnections = nodeConnections.get(a.id)?.length || 0;
-            const bConnections = nodeConnections.get(b.id)?.length || 0;
-            return bConnections - aConnections;
-        });
-
-        // Render each note node with its connections
-        for (const node of sortedNodes) {
-            const connections = nodeConnections.get(node.id) || [];
-            const nodeDiv = document.createElement('div');
-            nodeDiv.className = 'graph-node-group';
-
-            // Node header (clickable)
-            const header = document.createElement('div');
-            header.className = 'graph-node-header';
-            const iconSpan = document.createElement('span');
-            iconSpan.className = 'codicon codicon-file';
-            header.appendChild(iconSpan);
-            header.appendChild(document.createTextNode(` ${node.label} `));
-
-            if (connections.length > 0) {
-                const countSpan = document.createElement('span');
-                countSpan.className = 'graph-connection-count';
-                countSpan.textContent = `(${connections.length} ${connections.length === 1 ? 'link' : 'links'})`;
-                header.appendChild(countSpan);
-            }
-
-            header.onclick = async () => {
-                await this.openNode(node);
-            };
-            nodeDiv.appendChild(header);
-
-            // Connections list
-            if (connections.length > 0) {
-                const connectionsList = document.createElement('div');
-                connectionsList.className = 'graph-connections';
-
-                for (const targetNode of connections) {
-                    const connItem = document.createElement('div');
-                    connItem.className = `graph-connection-item ${targetNode.type === 'placeholder' ? 'placeholder' : ''}`;
-
-                    const connIcon = document.createElement('span');
-                    connIcon.className = targetNode.type === 'placeholder' ? 'codicon codicon-warning' : 'codicon codicon-arrow-right';
-                    connItem.appendChild(connIcon);
-                    connItem.appendChild(document.createTextNode(` ${targetNode.label}`));
-
-                    if (targetNode.type === 'note') {
-                        connItem.onclick = async e => {
-                            e.stopPropagation();
-                            await this.openNode(targetNode);
-                        };
-                    } else {
-                        connItem.title = 'Unresolved link - note does not exist';
-                    }
-
-                    connectionsList.appendChild(connItem);
-                }
-
-                nodeDiv.appendChild(connectionsList);
-            }
-
-            container.appendChild(nodeDiv);
-        }
+        // Create SVG element
+        const svgElement = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svgElement.setAttribute('class', 'graph-svg');
+        svgElement.setAttribute('width', '100%');
+        svgElement.setAttribute('height', '100%');
+        container.appendChild(svgElement);
 
         this.node.appendChild(container);
+
+        // Build D3 graph
+        this.buildD3Graph(svgElement);
     }
 
-    private getNodeConnections(): Map<string, GraphNode[]> {
-        const connections = new Map<string, GraphNode[]>();
-
+    private buildD3Graph(svgElement: SVGSVGElement): void {
         if (!this.graphData) {
-            return connections;
+            return;
         }
 
-        for (const link of this.graphData.links) {
-            const targetNode = this.graphData.nodes.find(n => n.id === link.target);
-            if (targetNode) {
-                const existing = connections.get(link.source) || [];
-                existing.push(targetNode);
-                connections.set(link.source, existing);
-            }
-        }
+        // Get container dimensions
+        const rect = svgElement.getBoundingClientRect();
+        const width = rect.width || 800;
+        const height = rect.height || 600;
 
-        return connections;
+        // Clear any existing SVG content
+        this.svg = d3.select(svgElement);
+        this.svg.selectAll('*').remove();
+
+        // Clone nodes to avoid mutating original data
+        const nodes: SimulationNode[] = this.graphData.nodes.map(n => ({ ...n }));
+        const links: SimulationLink[] = this.graphData.links.map(l => ({ ...l }));
+
+        // Create zoom behavior
+        const zoom = d3.zoom<SVGSVGElement, unknown>()
+            .scaleExtent([0.1, 4])
+            .on('zoom', event => {
+                g.attr('transform', event.transform);
+            });
+
+        this.svg.call(zoom);
+
+        // Create main group for zoom/pan
+        const g = this.svg.append('g');
+
+        // Create force simulation
+        this.simulation = d3.forceSimulation<SimulationNode, SimulationLink>(nodes)
+            .force('link', d3.forceLink<SimulationNode, SimulationLink>(links)
+                .id(d => d.id)
+                .distance(100))
+            .force('charge', d3.forceManyBody().strength(-300))
+            .force('center', d3.forceCenter(width / 2, height / 2))
+            .force('collide', d3.forceCollide().radius(30));
+
+        // Create arrow markers for directed edges
+        const defs = g.append('defs');
+        defs.append('marker')
+            .attr('id', 'arrowhead')
+            .attr('viewBox', '0 -5 10 10')
+            .attr('refX', 20)
+            .attr('refY', 0)
+            .attr('markerWidth', 6)
+            .attr('markerHeight', 6)
+            .attr('orient', 'auto')
+            .append('path')
+            .attr('d', 'M0,-5L10,0L0,5')
+            .attr('fill', 'var(--theia-editorWidget-foreground)');
+
+        // Create links
+        const link = g.append('g')
+            .attr('class', 'links')
+            .selectAll('line')
+            .data(links)
+            .enter()
+            .append('line')
+            .attr('class', 'graph-link')
+            .attr('stroke', 'var(--theia-editorWidget-foreground)')
+            .attr('stroke-opacity', 0.3)
+            .attr('stroke-width', 2)
+            .attr('marker-end', 'url(#arrowhead)');
+
+        // Create nodes
+        const node = g.append('g')
+            .attr('class', 'nodes')
+            .selectAll('g')
+            .data(nodes)
+            .enter()
+            .append('g')
+            .attr('class', d => `graph-node ${d.type}`)
+            .call(this.createDragBehavior());
+
+        // Add circles for nodes
+        node.append('circle')
+            .attr('r', d => this.getNodeRadius(d))
+            .attr('fill', d => this.getNodeColor(d))
+            .attr('stroke', 'var(--theia-editor-background)')
+            .attr('stroke-width', 2);
+
+        // Add labels
+        node.append('text')
+            .attr('class', 'graph-node-label')
+            .attr('dx', 12)
+            .attr('dy', 4)
+            .text(d => d.label)
+            .attr('fill', 'var(--theia-editorWidget-foreground)')
+            .style('font-size', '12px')
+            .style('pointer-events', 'none');
+
+        // Add click handler
+        node.on('click', (event, d) => {
+            event.stopPropagation();
+            this.openNode(d);
+        });
+
+        // Add hover effect
+        node.on('mouseenter', function (this: Element): void {
+            d3.select(this).select('circle')
+                .attr('stroke-width', 3);
+        });
+        node.on('mouseleave', function (this: Element): void {
+            d3.select(this).select('circle')
+                .attr('stroke-width', 2);
+        });
+
+        // Update positions on simulation tick
+        this.simulation.on('tick', () => {
+            link
+                .attr('x1', d => (d.source as SimulationNode).x!)
+                .attr('y1', d => (d.source as SimulationNode).y!)
+                .attr('x2', d => (d.target as SimulationNode).x!)
+                .attr('y2', d => (d.target as SimulationNode).y!);
+
+            node.attr('transform', d => `translate(${d.x},${d.y})`);
+        });
     }
 
-    private async openNode(node: GraphNode): Promise<void> {
+    private createDragBehavior(): d3.DragBehavior<Element, SimulationNode, SimulationNode> {
+        const dragStarted = (event: d3.D3DragEvent<Element, SimulationNode, SimulationNode>, d: SimulationNode) => {
+            if (!event.active && this.simulation) {
+                this.simulation.alphaTarget(0.3).restart();
+            }
+            d.fx = d.x;
+            d.fy = d.y;
+        };
+
+        const dragged = (event: d3.D3DragEvent<Element, SimulationNode, SimulationNode>, d: SimulationNode) => {
+            d.fx = event.x;
+            d.fy = event.y;
+        };
+
+        const dragEnded = (event: d3.D3DragEvent<Element, SimulationNode, SimulationNode>, d: SimulationNode) => {
+            if (!event.active && this.simulation) {
+                this.simulation.alphaTarget(0);
+            }
+            d.fx = undefined;
+            d.fy = undefined;
+        };
+
+        return d3.drag<Element, SimulationNode, SimulationNode>()
+            .on('start', dragStarted)
+            .on('drag', dragged)
+            .on('end', dragEnded);
+    }
+
+    private getNodeRadius(node: SimulationNode): number {
+        if (!this.graphData) {
+            return 8;
+        }
+        // Calculate degree (number of connections)
+        const degree = this.graphData.links.filter(
+            l => l.source === node.id || l.target === node.id
+        ).length;
+        // More connections = bigger node
+        return 8 + Math.sqrt(degree) * 3;
+    }
+
+    private getNodeColor(node: SimulationNode): string {
+        if (node.type === 'placeholder') {
+            return 'var(--theia-notificationsWarningIcon-foreground)';
+        }
+        return 'var(--theia-activityBar-activeBorder)';
+    }
+
+    private async openNode(node: SimulationNode): Promise<void> {
         if (node.type !== 'note') {
             return;
         }
