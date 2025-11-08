@@ -157,6 +157,17 @@ yarn package:applications
     - `launcher/` - CLI launcher for AppImage builds
 - `knowledge-base/` - Project documentation and architecture notes
 
+### Maintaining the Fork
+
+Quallaa is a fork of Eclipse Theia IDE. To merge upstream updates:
+
+```bash
+.github/scripts/merge-upstream.sh
+```
+
+For detailed merge strategies and conflict resolution, see
+[docs/MERGING_UPSTREAM.md](docs/MERGING_UPSTREAM.md).
+
 ## License
 
 Copyright (c) 2025 Jeff Toffoli
