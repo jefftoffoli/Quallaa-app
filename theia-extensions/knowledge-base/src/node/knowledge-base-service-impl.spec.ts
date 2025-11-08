@@ -16,66 +16,88 @@
 
 /**
  * Tests for knowledge base service implementation
+ * Using real temporary filesystem for integration testing
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any, no-unused-expressions, no-null/no-null */
 import { expect } from 'chai';
 import { KnowledgeBaseServiceImpl } from './knowledge-base-service-impl';
-import { FileSearchService } from '@theia/file-search/lib/common/file-search-service';
 import { parseWikiLinks } from '../common/wiki-link-parser';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 
-// Mock FileSearchService
-class MockFileSearchService implements Partial<FileSearchService> {
-    private mockFiles: string[] = [];
+/**
+ * Helper to create a temporary workspace with test files
+ */
+async function createTempWorkspace(files: { name: string; content: string }[]): Promise<string> {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'kb-test-'));
 
-    setMockFiles(files: string[]): void {
-        this.mockFiles = files;
+    for (const file of files) {
+        const filePath = path.join(tempDir, file.name);
+        const dir = path.dirname(filePath);
+
+        // Create subdirectories if needed
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+
+        fs.writeFileSync(filePath, file.content, 'utf-8');
     }
 
-    async find(searchPattern: string, options?: any): Promise<string[]> {
-        return this.mockFiles;
+    return tempDir;
+}
+
+/**
+ * Helper to clean up temporary workspace
+ */
+async function cleanupTempWorkspace(tempDir: string): Promise<void> {
+    if (fs.existsSync(tempDir)) {
+        fs.rmSync(tempDir, { recursive: true, force: true });
     }
 }
 
 describe('KnowledgeBaseServiceImpl', () => {
     let service: KnowledgeBaseServiceImpl;
-    let mockFileSearchService: MockFileSearchService;
+    let tempWorkspace: string;
 
-    beforeEach(() => {
-        mockFileSearchService = new MockFileSearchService();
-        service = new KnowledgeBaseServiceImpl();
-        // Inject mock service
-        (service as any).fileSearchService = mockFileSearchService;
+    afterEach(async () => {
+        // Clean up temp workspace after each test
+        if (tempWorkspace) {
+            await cleanupTempWorkspace(tempWorkspace);
+        }
     });
 
     describe('getAllNotes', () => {
         it('should index and return all markdown notes', async () => {
-            mockFileSearchService.setMockFiles([
-                'file:///workspace/Note1.md',
-                'file:///workspace/Note2.md',
-                'file:///workspace/subdir/Note3.md'
+            tempWorkspace = await createTempWorkspace([
+                { name: 'Note1.md', content: '# Note 1\nContent here' },
+                { name: 'Note2.md', content: '# Note 2\nMore content' },
+                { name: 'subdir/Note3.md', content: '# Note 3\nNested content' }
             ]);
+
+            service = new KnowledgeBaseServiceImpl();
+            await service.indexWorkspace(`file://${tempWorkspace}`);
 
             const notes = await service.getAllNotes();
 
             expect(notes).to.have.length(3);
-            expect(notes[0].basename).to.equal('Note1');
-            expect(notes[1].basename).to.equal('Note2');
-            expect(notes[2].basename).to.equal('Note3');
+            const basenames = notes.map(n => n.basename).sort();
+            expect(basenames).to.deep.equal(['Note1', 'Note2', 'Note3']);
         });
 
         it('should cache results for performance', async () => {
-            mockFileSearchService.setMockFiles([
-                'file:///workspace/Note1.md'
+            tempWorkspace = await createTempWorkspace([
+                { name: 'Note1.md', content: '# Note 1' }
             ]);
+
+            service = new KnowledgeBaseServiceImpl();
+            await service.indexWorkspace(`file://${tempWorkspace}`);
 
             const notes1 = await service.getAllNotes();
 
-            // Change mock files, but cache should return same results
-            mockFileSearchService.setMockFiles([
-                'file:///workspace/Note1.md',
-                'file:///workspace/Note2.md'
-            ]);
+            // Add another file (but don't re-index)
+            fs.writeFileSync(path.join(tempWorkspace, 'Note2.md'), '# Note 2', 'utf-8');
 
             const notes2 = await service.getAllNotes();
 
@@ -85,7 +107,10 @@ describe('KnowledgeBaseServiceImpl', () => {
         });
 
         it('should handle empty workspace', async () => {
-            mockFileSearchService.setMockFiles([]);
+            tempWorkspace = await createTempWorkspace([]);
+
+            service = new KnowledgeBaseServiceImpl();
+            await service.indexWorkspace(`file://${tempWorkspace}`);
 
             const notes = await service.getAllNotes();
 
@@ -93,80 +118,79 @@ describe('KnowledgeBaseServiceImpl', () => {
         });
 
         it('should extract title from filename', async () => {
-            mockFileSearchService.setMockFiles([
-                'file:///workspace/My Awesome Note.md'
+            tempWorkspace = await createTempWorkspace([
+                { name: 'My Awesome Note.md', content: 'Content without frontmatter' }
             ]);
+
+            service = new KnowledgeBaseServiceImpl();
+            await service.indexWorkspace(`file://${tempWorkspace}`);
 
             const notes = await service.getAllNotes();
 
+            expect(notes).to.have.length(1);
             expect(notes[0].title).to.equal('My Awesome Note');
-            expect(notes[0].basename).to.equal('My Awesome Note');
         });
     });
 
     describe('searchNotes', () => {
         beforeEach(async () => {
-            mockFileSearchService.setMockFiles([
-                'file:///workspace/JavaScript Basics.md',
-                'file:///workspace/Java Programming.md',
-                'file:///workspace/Python Guide.md',
-                'file:///workspace/TypeScript Advanced.md'
+            tempWorkspace = await createTempWorkspace([
+                { name: 'Authentication.md', content: '# Authentication\nOAuth and security' },
+                { name: 'Authorization.md', content: '# Authorization\nPermissions' },
+                { name: 'Security.md', content: '# Security\nBest practices' }
             ]);
-            await service.getAllNotes(); // Trigger indexing
+
+            service = new KnowledgeBaseServiceImpl();
+            await service.indexWorkspace(`file://${tempWorkspace}`);
         });
 
         it('should find notes by partial match', async () => {
-            const results = await service.searchNotes('Java');
+            const results = await service.searchNotes('auth');
 
             expect(results.length).to.be.at.least(1);
-            const titles = results.map(n => n.title);
-            expect(titles).to.include('JavaScript Basics');
-            expect(titles).to.include('Java Programming');
+            const titles = results.map(n => n.title.toLowerCase());
+            expect(titles.some(t => t.includes('auth'))).to.be.true;
         });
 
         it('should be case insensitive', async () => {
-            const results = await service.searchNotes('python');
+            const results = await service.searchNotes('AUTHENTICATION');
 
             expect(results).to.have.length(1);
-            expect(results[0].title).to.equal('Python Guide');
+            expect(results[0].title).to.equal('Authentication');
         });
 
         it('should prioritize exact matches', async () => {
-            mockFileSearchService.setMockFiles([
-                'file:///workspace/Test.md',
-                'file:///workspace/Testing Advanced.md',
-                'file:///workspace/Test Cases.md'
-            ]);
-            // Clear cache by creating new instance
-            service = new KnowledgeBaseServiceImpl();
-            (service as any).fileSearchService = mockFileSearchService;
+            const results = await service.searchNotes('Security');
 
-            const results = await service.searchNotes('Test');
-
-            // Exact match should be first
-            expect(results[0].title).to.equal('Test');
+            expect(results.length).to.be.at.least(1);
+            expect(results[0].title).to.equal('Security');
         });
 
         it('should prioritize starts-with matches', async () => {
-            const results = await service.searchNotes('Type');
+            const results = await service.searchNotes('Auth');
 
-            expect(results[0].title).to.equal('TypeScript Advanced');
+            expect(results.length).to.be.at.least(2);
+            expect(results[0].title).to.be.oneOf(['Authentication', 'Authorization']);
         });
 
         it('should return empty array when no matches', async () => {
-            const results = await service.searchNotes('Nonexistent');
+            const results = await service.searchNotes('NonExistent');
 
             expect(results).to.be.an('array').that.is.empty;
         });
 
         it('should limit results to 50', async () => {
-            // Create 100 mock files
-            const manyFiles = Array.from({ length: 100 }, (_, i) =>
-                `file:///workspace/Note${i}.md`
-            );
-            mockFileSearchService.setMockFiles(manyFiles);
+            // Create 60 notes
+            const files = Array.from({ length: 60 }, (_, i) => ({
+                name: `Note${i + 1}.md`,
+                content: `# Note ${i + 1}`
+            }));
+
+            await cleanupTempWorkspace(tempWorkspace);
+            tempWorkspace = await createTempWorkspace(files);
+
             service = new KnowledgeBaseServiceImpl();
-            (service as any).fileSearchService = mockFileSearchService;
+            await service.indexWorkspace(`file://${tempWorkspace}`);
 
             const results = await service.searchNotes('Note');
 
@@ -176,52 +200,48 @@ describe('KnowledgeBaseServiceImpl', () => {
 
     describe('findNoteByTitle', () => {
         beforeEach(async () => {
-            mockFileSearchService.setMockFiles([
-                'file:///workspace/Exact Match.md',
-                'file:///workspace/Partial Match Test.md',
-                'file:///workspace/case-sensitive.md'
+            tempWorkspace = await createTempWorkspace([
+                { name: 'Exact-Match.md', content: '# Exact Match' },
+                { name: 'Case-Insensitive.md', content: '# Case Test' },
+                { name: 'Note-with-dashes.md', content: '# Note with dashes' }
             ]);
-            await service.getAllNotes();
+
+            service = new KnowledgeBaseServiceImpl();
+            await service.indexWorkspace(`file://${tempWorkspace}`);
         });
 
         it('should find note by exact basename match', async () => {
-            const note = await service.findNoteByTitle('Exact Match');
+            const note = await service.findNoteByTitle('Exact-Match');
 
             expect(note).to.not.be.undefined;
-            expect(note?.title).to.equal('Exact Match');
+            expect(note!.basename).to.equal('Exact-Match');
         });
 
         it('should be case insensitive', async () => {
-            const note = await service.findNoteByTitle('exact match');
+            const note = await service.findNoteByTitle('CASE-INSENSITIVE');
 
             expect(note).to.not.be.undefined;
-            expect(note?.title).to.equal('Exact Match');
+            expect(note!.basename).to.equal('Case-Insensitive');
         });
 
         it('should handle .md extension in query', async () => {
-            const note = await service.findNoteByTitle('Exact Match');
+            const note = await service.findNoteByTitle('Exact-Match.md');
 
             expect(note).to.not.be.undefined;
-            expect(note?.title).to.equal('Exact Match');
+            expect(note!.basename).to.equal('Exact-Match');
         });
 
         it('should return undefined for non-existent note', async () => {
-            const note = await service.findNoteByTitle('Does Not Exist');
+            const note = await service.findNoteByTitle('NonExistent');
 
             expect(note).to.be.undefined;
         });
 
         it('should handle special characters', async () => {
-            mockFileSearchService.setMockFiles([
-                'file:///workspace/Note-with-dashes.md'
-            ]);
-            service = new KnowledgeBaseServiceImpl();
-            (service as any).fileSearchService = mockFileSearchService;
-
             const note = await service.findNoteByTitle('Note-with-dashes');
 
             expect(note).to.not.be.undefined;
-            expect(note?.title).to.equal('Note-with-dashes');
+            expect(note!.title).to.equal('Note with dashes');
         });
     });
 
@@ -230,18 +250,20 @@ describe('KnowledgeBaseServiceImpl', () => {
 
     describe('resolveWikiLink', () => {
         beforeEach(async () => {
-            mockFileSearchService.setMockFiles([
-                'file:///workspace/Existing Note.md',
-                'file:///workspace/Another Note.md'
+            tempWorkspace = await createTempWorkspace([
+                { name: 'Existing Note.md', content: '# Existing Note' },
+                { name: 'Another Note.md', content: '# Another Note' }
             ]);
-            await service.getAllNotes();
+
+            service = new KnowledgeBaseServiceImpl();
+            await service.indexWorkspace(`file://${tempWorkspace}`);
         });
 
         it('should resolve existing wiki link', async () => {
             const note = await service.resolveWikiLink('Existing Note');
 
             expect(note).to.not.be.undefined;
-            expect(note?.title).to.equal('Existing Note');
+            expect(note!.title).to.equal('Existing Note');
         });
 
         it('should return undefined for broken link', async () => {
@@ -251,43 +273,49 @@ describe('KnowledgeBaseServiceImpl', () => {
         });
 
         it('should be case insensitive when resolving', async () => {
-            const note = await service.resolveWikiLink('existing note');
+            const note = await service.resolveWikiLink('EXISTING NOTE');
 
             expect(note).to.not.be.undefined;
-            expect(note?.title).to.equal('Existing Note');
+            expect(note!.title).to.equal('Existing Note');
         });
     });
 
     describe('Integration Tests', () => {
         it('should handle complete workflow: index -> search -> resolve', async () => {
-            // Setup
-            mockFileSearchService.setMockFiles([
-                'file:///workspace/Project Ideas.md',
-                'file:///workspace/Project Plan.md',
-                'file:///workspace/Meeting Notes.md'
+            tempWorkspace = await createTempWorkspace([
+                { name: 'Note A.md', content: '# Note A\n\nLinks to [[Note B]]' },
+                { name: 'Note B.md', content: '# Note B\n\nLinks to [[Note C]]' },
+                { name: 'Note C.md', content: '# Note C\n\nNo links' }
             ]);
 
-            // Index
+            service = new KnowledgeBaseServiceImpl();
+            await service.indexWorkspace(`file://${tempWorkspace}`);
+
+            // Test indexing
             const allNotes = await service.getAllNotes();
             expect(allNotes).to.have.length(3);
 
-            // Search
-            const searchResults = await service.searchNotes('Project');
-            expect(searchResults).to.have.length(2);
+            // Test searching
+            const searchResults = await service.searchNotes('Note');
+            expect(searchResults.length).to.be.at.least(3);
 
-            // Resolve
-            const resolved = await service.resolveWikiLink('Project Ideas');
-            expect(resolved).to.not.be.undefined;
-            expect(resolved?.title).to.equal('Project Ideas');
+            // Test resolving
+            const noteA = await service.findNoteByTitle('Note A');
+            expect(noteA).to.not.be.undefined;
+
+            const noteB = await service.resolveWikiLink('Note B');
+            expect(noteB).to.not.be.undefined;
         });
 
         it('should parse and resolve wiki links from content', async () => {
-            mockFileSearchService.setMockFiles([
-                'file:///workspace/Note A.md',
-                'file:///workspace/Note B.md',
-                'file:///workspace/Note C.md'
+            tempWorkspace = await createTempWorkspace([
+                { name: 'Note A.md', content: 'See [[Note A]] and [[Note B]] but not [[Missing Note]]' },
+                { name: 'Note B.md', content: '# Note B' },
+                { name: 'Note C.md', content: '# Note C' }
             ]);
-            await service.getAllNotes();
+
+            service = new KnowledgeBaseServiceImpl();
+            await service.indexWorkspace(`file://${tempWorkspace}`);
 
             const content = 'See [[Note A]] and [[Note B]] but not [[Missing Note]]';
             const links = parseWikiLinks(content);

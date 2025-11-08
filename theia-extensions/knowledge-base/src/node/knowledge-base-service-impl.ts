@@ -23,7 +23,7 @@ import { injectable, postConstruct } from '@theia/core/shared/inversify';
 import URI from '@theia/core/lib/common/uri';
 import { KnowledgeBaseService, Note, Backlink } from '../common/knowledge-base-protocol';
 import { parseWikiLinks } from '../common/wiki-link-parser';
-import { parseFrontmatter, extractTags } from './frontmatter-parser';
+import { parseFrontmatter, extractTags, extractTitle } from './frontmatter-parser';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as chokidar from 'chokidar';
@@ -376,8 +376,8 @@ export class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
             const content = fs.readFileSync(filePath, 'utf-8');
             const parsed = parseFrontmatter(content);
 
-            // Extract metadata
-            const title = parsed.frontmatter.title || basename;
+            // Extract metadata (title priority: frontmatter > H1 heading > basename)
+            const title = extractTitle(content, basename);
             const aliases = parsed.frontmatter.aliases || [];
             const tags = extractTags(content);
 
