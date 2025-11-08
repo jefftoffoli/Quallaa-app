@@ -22,6 +22,7 @@
 import { expect } from 'chai';
 import { KnowledgeBaseServiceImpl } from './knowledge-base-service-impl';
 import { FileSearchService } from '@theia/file-search/lib/common/file-search-service';
+import { parseWikiLinks } from '../common/wiki-link-parser';
 
 // Mock FileSearchService
 class MockFileSearchService implements Partial<FileSearchService> {
@@ -224,23 +225,8 @@ describe('KnowledgeBaseServiceImpl', () => {
         });
     });
 
-    describe('parseWikiLinks', () => {
-        it('should parse wiki links from content', () => {
-            const content = 'Text with [[Link 1]] and [[Link 2]]';
-            const links = service.parseWikiLinks(content);
-
-            expect(links).to.have.length(2);
-            expect(links[0].target).to.equal('Link 1');
-            expect(links[1].target).to.equal('Link 2');
-        });
-
-        it('should handle content with no links', () => {
-            const content = 'Plain text without links';
-            const links = service.parseWikiLinks(content);
-
-            expect(links).to.be.an('array').that.is.empty;
-        });
-    });
+    // Note: parseWikiLinks tests are in wiki-link-parser.spec.ts
+    // Parser is now in common/ and used locally by both frontend and backend
 
     describe('resolveWikiLink', () => {
         beforeEach(async () => {
@@ -304,7 +290,7 @@ describe('KnowledgeBaseServiceImpl', () => {
             await service.getAllNotes();
 
             const content = 'See [[Note A]] and [[Note B]] but not [[Missing Note]]';
-            const links = service.parseWikiLinks(content);
+            const links = parseWikiLinks(content);
 
             expect(links).to.have.length(3);
 
