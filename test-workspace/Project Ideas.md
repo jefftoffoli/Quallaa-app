@@ -2,6 +2,8 @@
 
 Collection of project ideas and concepts.
 
+#project #ideas #planning
+
 ## Active Projects
 
 - [[Wiki Links]] implementation

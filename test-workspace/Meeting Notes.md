@@ -1,5 +1,7 @@
 # Meeting Notes
 
+#meeting #notes #planning
+
 ## 2025-10-27 - Phase 1.2 Planning
 
 Discussed [[Wiki Links]] implementation:

@@ -2,6 +2,8 @@
 
 This is a test workspace for testing wiki link functionality in Quallaa.
 
+#documentation #testing #workspace
+
 ## Features to Test
 
 - [[Wiki Links]] - Basic wiki link creation and navigation
@@ -13,9 +15,4 @@ This is a test workspace for testing wiki link functionality in Quallaa.
 - [[Project Ideas]]
 - [[Meeting Notes]]
 
-[[foo]]
-[[bar]]
-[[bar]]
-[[My Custom TestA]]
-
-
+[[foo]] [[bar]] [[bar]] [[My Custom TestA]]
