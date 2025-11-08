@@ -1,6 +1,6 @@
 {
     "private": true,
-    "version": "1.65.100",
+    "version": "1.66.100",
     "license": "EPL-2.0",
     "author": "Jeff Toffoli",
     "homepage": "https://github.com/jefftoffoli/Quallaa-app#readme",
@@ -18,7 +18,7 @@
     "devDependencies": {
         "@eclipse-dash/nodejs-wrapper": "^0.0.1",
         "@playwright/test": "^1.56.1",
-        "@theia/cli": "1.65.1",
+        "@theia/cli": "1.66.1",
         "@types/d3": "7.0.0",
         "@types/yargs": "17.0.7",
         "@typescript-eslint/eslint-plugin": "^4.25.0",

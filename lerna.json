@@ -1,11 +1,11 @@
 {
-  "lerna": "4.0.0",
-  "version": "1.65.100",
-  "useWorkspaces": true,
-  "npmClient": "yarn",
-  "command": {
-    "run": {
-      "stream": true
+    "lerna": "4.0.0",
+    "version": "1.66.100",
+    "useWorkspaces": true,
+    "npmClient": "yarn",
+    "command": {
+        "run": {
+            "stream": true
+        }
     }
-  }
 }
