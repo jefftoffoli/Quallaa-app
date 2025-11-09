@@ -9,7 +9,7 @@
 
 import '../../src/browser/style/index.css';
 
-import { WidgetFactory } from '@theia/core/lib/browser';
+import { WidgetFactory, FrontendApplicationContribution } from '@theia/core/lib/browser';
 import { AboutDialog } from '@theia/core/lib/browser/about-dialog';
 import { CommandContribution } from '@theia/core/lib/common/command';
 import { ContainerModule } from '@theia/core/shared/inversify';
@@ -18,13 +18,17 @@ import { MenuContribution } from '@theia/core/lib/common/menu';
 import { TheiaIDEAboutDialog } from './theia-ide-about-dialog';
 import { TheiaIDEContribution } from './theia-ide-contribution';
 import { TheiaIDEGettingStartedWidget } from './theia-ide-getting-started-widget';
+import { ViewModeManager } from './view-mode-manager';
+import { ViewModeContribution } from './view-mode-contribution';
 
 export default new ContainerModule((bind, _unbind, isBound, rebind) => {
     bind(TheiaIDEGettingStartedWidget).toSelf();
-    bind(WidgetFactory).toDynamicValue(context => ({
-        id: GettingStartedWidget.ID,
-        createWidget: () => context.container.get<TheiaIDEGettingStartedWidget>(TheiaIDEGettingStartedWidget),
-    })).inSingletonScope();
+    bind(WidgetFactory)
+        .toDynamicValue(context => ({
+            id: GettingStartedWidget.ID,
+            createWidget: () => context.container.get<TheiaIDEGettingStartedWidget>(TheiaIDEGettingStartedWidget),
+        }))
+        .inSingletonScope();
     if (isBound(AboutDialog)) {
         rebind(AboutDialog).to(TheiaIDEAboutDialog).inSingletonScope();
     } else {
@@ -32,7 +36,10 @@ export default new ContainerModule((bind, _unbind, isBound, rebind) => {
     }
 
     bind(TheiaIDEContribution).toSelf().inSingletonScope();
-    [CommandContribution, MenuContribution].forEach(serviceIdentifier =>
-        bind(serviceIdentifier).toService(TheiaIDEContribution)
-    );
+    [CommandContribution, MenuContribution].forEach(serviceIdentifier => bind(serviceIdentifier).toService(TheiaIDEContribution));
+
+    // View Mode Manager - KB View vs Developer View
+    bind(ViewModeManager).toSelf().inSingletonScope();
+    bind(ViewModeContribution).toSelf().inSingletonScope();
+    [CommandContribution, MenuContribution, FrontendApplicationContribution].forEach(serviceIdentifier => bind(serviceIdentifier).toService(ViewModeContribution));
 });
