@@ -18,6 +18,7 @@ knowledge-base/
 test-results/
 playwright-report/
 test-*.png
+perf-workspace*/
 
 # Development debug scripts
 debug-*.js
