@@ -40,6 +40,9 @@ test.describe('Performance Benchmarks', () => {
 
         // Wait for the application to be ready
         await page.waitForSelector('.theia-ApplicationShell', { timeout: 30000 });
+
+        // Give workspace indexing time to complete
+        await page.waitForTimeout(2000);
     });
 
     test('should index 1000 notes within target time', async ({ page }) => {
