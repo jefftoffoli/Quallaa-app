@@ -1,0 +1,33 @@
+{
+    "name": "quallaa-kb-view-ext",
+    "version": "1.66.100",
+    "description": "KB View UI with Obsidian-inspired Ribbon and dual sidebars",
+    "license": "EPL-2.0",
+    "author": "Jeff Toffoli",
+    "homepage": "https://github.com/jefftoffoli/Quallaa-app#readme",
+    "bugs": {
+        "url": "https://github.com/jefftoffoli/Quallaa-app/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/jefftoffoli/Quallaa-app.git"
+    },
+    "keywords": [
+        "theia-extension"
+    ],
+    "dependencies": {
+        "@theia/core": "1.66.1",
+        "react": "^18.2.0"
+    },
+    "scripts": {
+        "build": "tsc -b",
+        "clean": "rimraf lib *.tsbuildinfo",
+        "lint": "eslint --ext .ts,.tsx ./src",
+        "watch": "tsc -b -w"
+    },
+    "theiaExtensions": [
+        {
+            "frontend": "lib/browser/kb-view-frontend-module"
+        }
+    ]
+}
