@@ -14,81 +14,101 @@
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0
  ********************************************************************************/
 
-import { injectable, inject } from '@theia/core/shared/inversify';
-import { ApplicationShell, SidePanelHandler } from '@theia/core/lib/browser/shell';
+import { injectable, postConstruct } from '@theia/core/shared/inversify';
 import { Emitter } from '@theia/core/lib/common/event';
 import { SidebarService, SidebarVisibilityChange } from '../../common/kb-view-protocol';
+import { SidebarWidget } from './sidebar-widget';
 
+/**
+ * Service that manages visibility of panels within KB View's custom sidebars.
+ *
+ * This is a greenfield implementation that works with SidebarWidget instances,
+ * NOT Theia's LeftPanelHandler/RightPanelHandler.
+ *
+ * The service provides a simple API for Ribbon icons to show/hide panels
+ * and tracks which panels are currently visible on each side.
+ */
 @injectable()
 export class SidebarServiceImpl implements SidebarService {
-    @inject(ApplicationShell)
-    protected readonly shell: ApplicationShell;
+    protected leftSidebar: SidebarWidget | undefined;
+    protected rightSidebar: SidebarWidget | undefined;
 
-    private visiblePanels = new Map<string, Set<string>>();
     private readonly onVisibilityChangedEmitter = new Emitter<SidebarVisibilityChange>();
     readonly onVisibilityChanged = this.onVisibilityChangedEmitter.event;
 
+    @postConstruct()
+    protected init(): void {
+        console.log('[SidebarService] Initialized');
+    }
+
+    /**
+     * Register the sidebar widget instances.
+     * Called by KBViewShell after creating the sidebars.
+     */
+    registerSidebars(left: SidebarWidget, right: SidebarWidget): void {
+        this.leftSidebar = left;
+        this.rightSidebar = right;
+
+        // Forward visibility events from widgets
+        left.onPanelVisibilityChanged(event => {
+            this.onVisibilityChangedEmitter.fire({
+                side: 'left',
+                panelId: event.panelId,
+                visible: event.visible,
+            });
+        });
+
+        right.onPanelVisibilityChanged(event => {
+            this.onVisibilityChangedEmitter.fire({
+                side: 'right',
+                panelId: event.panelId,
+                visible: event.visible,
+            });
+        });
+
+        console.log('[SidebarService] Registered custom sidebar widgets');
+    }
+
     show(side: 'left' | 'right', panelId: string): void {
-        const handler = this.getHandler(side);
-        if (!handler) {
-            console.warn(`[SidebarService] No handler for side: ${side}`);
+        const sidebar = this.getSidebar(side);
+        if (!sidebar) {
+            console.warn(`[SidebarService] Sidebar not registered for side: ${side}`);
             return;
         }
 
-        // Activate the widget in the panel
-        handler.activate(panelId);
-
-        // Track visible panels
-        this.trackVisibility(side, panelId, true);
-
-        // Emit event
-        this.onVisibilityChangedEmitter.fire({ side, panelId, visible: true });
+        sidebar.showPanel(panelId);
     }
 
     hide(side: 'left' | 'right', panelId: string): void {
-        const handler = this.getHandler(side);
-        if (!handler) {
-            console.warn(`[SidebarService] No handler for side: ${side}`);
+        const sidebar = this.getSidebar(side);
+        if (!sidebar) {
+            console.warn(`[SidebarService] Sidebar not registered for side: ${side}`);
             return;
         }
 
-        // Collapse the panel (this hides all widgets in it)
-        handler.collapse();
-
-        // Track visibility
-        this.trackVisibility(side, panelId, false);
-
-        // Emit event
-        this.onVisibilityChangedEmitter.fire({ side, panelId, visible: false });
+        sidebar.hidePanel(panelId);
     }
 
     toggle(side: 'left' | 'right', panelId: string): void {
-        if (this.isVisible(side, panelId)) {
-            this.hide(side, panelId);
-        } else {
-            this.show(side, panelId);
+        const sidebar = this.getSidebar(side);
+        if (!sidebar) {
+            console.warn(`[SidebarService] Sidebar not registered for side: ${side}`);
+            return;
         }
+
+        sidebar.togglePanel(panelId);
     }
 
     isVisible(side: 'left' | 'right', panelId: string): boolean {
-        const panels = this.visiblePanels.get(side);
-        return panels ? panels.has(panelId) : false;
-    }
-
-    protected getHandler(side: 'left' | 'right'): SidePanelHandler {
-        return side === 'left' ? this.shell.leftPanelHandler : this.shell.rightPanelHandler;
-    }
-
-    protected trackVisibility(side: 'left' | 'right', panelId: string, visible: boolean): void {
-        if (!this.visiblePanels.has(side)) {
-            this.visiblePanels.set(side, new Set());
+        const sidebar = this.getSidebar(side);
+        if (!sidebar) {
+            return false;
         }
 
-        const panels = this.visiblePanels.get(side)!;
-        if (visible) {
-            panels.add(panelId);
-        } else {
-            panels.delete(panelId);
-        }
+        return sidebar.isPanelVisible(panelId);
+    }
+
+    protected getSidebar(side: 'left' | 'right'): SidebarWidget | undefined {
+        return side === 'left' ? this.leftSidebar : this.rightSidebar;
     }
 }

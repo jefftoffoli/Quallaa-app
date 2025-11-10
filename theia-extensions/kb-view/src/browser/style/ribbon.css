@@ -91,3 +91,15 @@
     left: auto;
     right: 0;
 }
+
+/* KB View mode integration */
+.kb-view-mode .kb-ribbon {
+    /* Ensure ribbon stays fixed width in split panels */
+    flex-shrink: 0;
+    flex-grow: 0;
+}
+
+/* Hide activity bar in KB View mode (ribbon replaces it) */
+.kb-view-mode .theia-app-left .theia-ActivityBar {
+    display: none;
+}

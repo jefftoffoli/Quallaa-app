@@ -17,26 +17,48 @@
 import { injectable, inject, postConstruct } from '@theia/core/shared/inversify';
 import { ApplicationShell } from '@theia/core/lib/browser/shell/application-shell';
 import { PreferenceService } from '@theia/core/lib/common/preferences/preference-service';
+import { WidgetManager } from '@theia/core/lib/browser/widget-manager';
 import { Widget, BoxLayout, SplitPanel, Layout } from '@theia/core/shared/@lumino/widgets';
 import { KB_VIEW_MODE_PREFERENCE } from '../kb-view-preferences';
 import { ViewMode } from '../view-mode-service';
+import { RibbonWidget } from '../ribbon/ribbon-widget';
+import { SidebarWidget } from '../sidebar/sidebar-widget';
+import { SidebarServiceImpl } from '../sidebar/sidebar-service';
 
 /**
- * Mode-aware shell that adapts based on view mode preference:
- * - KB View mode: Obsidian-inspired layout (dual sidebars, no bottom panel)
- * - Developer mode: Standard Theia IDE layout
+ * Custom shell for KB View with Obsidian-inspired layout.
+ *
+ * GREENFIELD APPROACH: This shell creates completely custom sidebar widgets
+ * instead of reusing Theia's LeftPanelHandler/RightPanelHandler.
+ *
+ * Layout structure:
+ * [Ribbon | Custom Left Sidebar | Main Area | Custom Right Sidebar]
+ *
+ * Key differences from standard Theia:
+ * - Custom Ribbon widget replaces Activity Bar
+ * - Custom SidebarWidget instances (not panel handlers)
+ * - No bottom panel region
+ * - Dual sidebars can be visible simultaneously
  */
 @injectable()
 export class KBViewShell extends ApplicationShell {
     @inject(PreferenceService)
     protected readonly preferenceService: PreferenceService;
 
+    @inject(WidgetManager)
+    protected readonly widgetManager: WidgetManager;
+
+    @inject(SidebarServiceImpl)
+    protected readonly sidebarService: SidebarServiceImpl;
+
     protected viewMode: ViewMode = 'developer';
+    protected ribbonWidget: RibbonWidget | undefined;
+    protected leftSidebar: SidebarWidget | undefined;
+    protected rightSidebar: SidebarWidget | undefined;
 
     @postConstruct()
     protected override init(): void {
         // Read view mode preference
-        // NOTE: PreferenceService may not be fully initialized yet, so it may return the default value
         this.viewMode = this.preferenceService.get<ViewMode>(KB_VIEW_MODE_PREFERENCE, 'kb-view');
         console.log(`[KBViewShell] Initializing with mode: ${this.viewMode}`);
 
@@ -45,70 +67,123 @@ export class KBViewShell extends ApplicationShell {
 
         if (this.viewMode === 'kb-view') {
             this.addClass('kb-view-mode');
+            this.initializeKBViewComponents();
         }
     }
 
     /**
-     * Create layout based on view mode:
-     * - KB View mode: Custom layout with dual sidebars, no bottom panel
-     * - Developer mode: Standard Theia IDE layout
+     * Initialize KB View specific components asynchronously.
+     */
+    protected async initializeKBViewComponents(): Promise<void> {
+        try {
+            // Create ribbon widget
+            this.ribbonWidget = await this.widgetManager.getOrCreateWidget<RibbonWidget>(RibbonWidget.ID);
+            this.ribbonWidget.setSide('left');
+            console.log('[KBViewShell] Ribbon widget created');
+
+            // Ribbon will be added to layout when shell is fully initialized
+            // We can't modify layout during @postConstruct, so we'll add it afterward
+        } catch (error) {
+            console.error('[KBViewShell] Failed to initialize KB View components:', error);
+        }
+    }
+
+    /**
+     * Create layout based on view mode.
      */
     protected override createLayout(): Layout {
         if (this.viewMode === 'kb-view') {
             return this.createKBViewLayout();
         } else {
-            console.log('[KBViewShell] Using standard layout (developer mode)');
+            console.log('[KBViewShell] Using standard Theia layout (developer mode)');
             return super.createLayout();
         }
     }
 
     /**
-     * Create custom KB View layout: [Ribbon | Left Sidebar | Main | Right Sidebar | Ribbon]
-     * No bottom panel region.
+     * Create greenfield KB View layout with custom sidebars.
+     *
+     * Structure:
+     * Horizontal: [Ribbon | Left Sidebar | Main Area | Right Sidebar]
+     * Main Area Vertical: [Top Panel | Main Panel | Status Bar]
+     *
+     * NO bottom panel region - terminal/problems/output don't exist in KB View.
      */
     protected createKBViewLayout(): BoxLayout {
-        console.log('[KBViewShell] Creating custom KB View layout');
+        console.log('[KBViewShell] Creating greenfield KB View layout');
 
-        // Create horizontal split: Left Panel | Main | Right Panel
-        const centerSplit = new SplitPanel({
+        // Create custom sidebar widgets
+        this.leftSidebar = new SidebarWidget('left');
+        this.rightSidebar = new SidebarWidget('right');
+
+        // Register sidebars with service
+        this.sidebarService.registerSidebars(this.leftSidebar, this.rightSidebar);
+
+        // Create main area layout (vertical: top panel, main, status bar)
+        const mainAreaLayout = new BoxLayout({ direction: 'top-to-bottom', spacing: 0 });
+        const mainAreaWidget = new Widget();
+        mainAreaWidget.layout = mainAreaLayout;
+
+        // Top panel (menu bar, toolbar)
+        mainAreaLayout.addWidget(this.topPanel);
+        BoxLayout.setStretch(this.topPanel, 0);
+
+        // Main panel (editor area)
+        mainAreaLayout.addWidget(this.mainPanel);
+        BoxLayout.setStretch(this.mainPanel, 1);
+
+        // Status bar
+        mainAreaLayout.addWidget(this.statusBar);
+        BoxLayout.setStretch(this.statusBar, 0);
+
+        // Create horizontal split with sidebars
+        const horizontalSplit = new SplitPanel({
             orientation: 'horizontal',
             spacing: 0,
         });
 
-        // Add panel widgets (ribbons will be added later via addWidget)
-        centerSplit.addWidget(this.leftPanelHandler.container);
-        centerSplit.addWidget(this.mainPanel);
-        centerSplit.addWidget(this.rightPanelHandler.container);
+        // Add widgets: Left Sidebar | Main Area | Right Sidebar
+        // Note: Ribbon will be inserted at position 0 later
+        horizontalSplit.addWidget(this.leftSidebar);
+        horizontalSplit.addWidget(mainAreaWidget);
+        horizontalSplit.addWidget(this.rightSidebar);
 
-        // Set stretch factors: panels flexible (1), main most flexible (3)
-        centerSplit.setRelativeSizes([1, 3, 1]);
+        // Set relative sizes: left sidebar (1), main (3), right sidebar (1)
+        // Will become [ribbon (0.5), left (1), main (3), right (1)] when ribbon added
+        horizontalSplit.setRelativeSizes([1, 3, 1]);
 
-        // Create main vertical layout: Top Panel | Center Split | Status Bar
-        // Note: No bottom panel!
-        const layout = new BoxLayout({ direction: 'top-to-bottom', spacing: 0 });
-        layout.addWidget(this.topPanel);
-        BoxLayout.setStretch(this.topPanel, 0);
+        // Create root layout
+        const rootLayout = new BoxLayout({ direction: 'left-to-right', spacing: 0 });
+        rootLayout.addWidget(horizontalSplit);
+        BoxLayout.setStretch(horizontalSplit, 1);
 
-        layout.addWidget(centerSplit);
-        BoxLayout.setStretch(centerSplit, 1);
-
-        layout.addWidget(this.statusBar);
-        BoxLayout.setStretch(this.statusBar, 0);
-
-        console.log('[KBViewShell] KB View layout created');
-        return layout;
+        console.log('[KBViewShell] Greenfield KB View layout created with custom sidebars');
+        return rootLayout;
     }
 
     /**
-     * Override to prevent bottom panel from being used in KB View mode
+     * Override addWidget to prevent bottom panel usage in KB View mode.
      */
     override async addWidget(widget: Widget, options?: ApplicationShell.WidgetOptions): Promise<void> {
-        // In KB View mode, redirect bottom panel widgets to main area
         if (this.viewMode === 'kb-view' && options?.area === 'bottom') {
             console.warn('[KBViewShell] Bottom panel not available in KB View mode, redirecting to main area');
             return super.addWidget(widget, { ...options, area: 'main' });
         }
 
         return super.addWidget(widget, options);
+    }
+
+    /**
+     * Get custom sidebar widget (for adding panels to sidebars).
+     */
+    getSidebar(side: 'left' | 'right'): SidebarWidget | undefined {
+        return side === 'left' ? this.leftSidebar : this.rightSidebar;
+    }
+
+    /**
+     * Get ribbon widget (for customization).
+     */
+    getRibbon(): RibbonWidget | undefined {
+        return this.ribbonWidget;
     }
 }

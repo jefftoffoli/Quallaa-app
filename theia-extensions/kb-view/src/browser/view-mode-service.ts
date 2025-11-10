@@ -62,7 +62,32 @@ export class ViewModeService {
 
     /**
      * Switch to a new view mode.
-     * Note: This requires an application reload to rebind ApplicationShell.
+     *
+     * CURRENT STATE: Just logs warning about reload requirement.
+     *
+     * TODO (Phase 8 - Shell Swapping):
+     * Implement actual shell replacement using DOM manipulation:
+     *
+     * 1. Capture current state:
+     *    - const layoutData = currentShell.getLayoutData()
+     *    - Save open editors, panel visibility, etc.
+     *
+     * 2. Create new shell instance:
+     *    - const newShell = container.get(newMode === 'kb-view' ? KBViewShell : ApplicationShell)
+     *
+     * 3. Replace in DOM:
+     *    - const container = document.getElementById('theia-app-shell')
+     *    - container.innerHTML = ''
+     *    - newShell.attach(container)
+     *
+     * 4. Restore state:
+     *    - await newShell.setLayoutData(layoutData)
+     *
+     * 5. Update current mode:
+     *    - this.currentMode = newMode
+     *
+     * CHALLENGE: Preserving editor content and widget state across shell swap.
+     * May need to serialize/deserialize widget state.
      */
     protected switchMode(newMode: ViewMode): void {
         this.currentMode = newMode;
@@ -71,7 +96,7 @@ export class ViewModeService {
         console.warn('[ViewModeService] View mode changed. Application reload required to apply changes.');
 
         // TODO: Show notification dialog offering to reload
-        // For now, just log the change
+        // For now, mode switching requires manual page reload
     }
 
     /**

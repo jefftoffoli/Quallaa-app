@@ -29,6 +29,7 @@ import { KBViewShell } from './shell/kb-view-shell';
 import { ApplicationShell } from '@theia/core/lib/browser/shell/application-shell';
 
 import '../../src/browser/style/ribbon.css';
+import '../../src/browser/style/sidebar.css';
 
 export default new ContainerModule((bind, unbind, isBound, rebind) => {
     // Preferences
@@ -37,8 +38,9 @@ export default new ContainerModule((bind, unbind, isBound, rebind) => {
     // View mode service
     bind(ViewModeService).toSelf().inSingletonScope();
 
-    // Sidebar service
-    bind(SidebarService).to(SidebarServiceImpl).inSingletonScope();
+    // Sidebar service - bind both interface and implementation
+    bind(SidebarServiceImpl).toSelf().inSingletonScope();
+    bind(SidebarService).toService(SidebarServiceImpl);
 
     // Ribbon registry
     bind(RibbonItemRegistry).to(RibbonItemRegistryImpl).inSingletonScope();
