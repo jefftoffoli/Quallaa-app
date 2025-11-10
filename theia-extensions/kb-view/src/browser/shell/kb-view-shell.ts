@@ -14,31 +14,58 @@
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0
  ********************************************************************************/
 
-import { injectable, postConstruct } from '@theia/core/shared/inversify';
+import { injectable, inject, postConstruct } from '@theia/core/shared/inversify';
 import { ApplicationShell } from '@theia/core/lib/browser/shell/application-shell';
-import { Widget, BoxLayout, SplitPanel } from '@theia/core/shared/@lumino/widgets';
+import { PreferenceService } from '@theia/core/lib/common/preferences/preference-service';
+import { Widget, BoxLayout, SplitPanel, Layout } from '@theia/core/shared/@lumino/widgets';
+import { KB_VIEW_MODE_PREFERENCE } from '../kb-view-preferences';
+import { ViewMode } from '../view-mode-service';
 
 /**
- * Custom shell for KB View with Obsidian-inspired layout:
- * - Ribbon widgets (left and right) instead of Activity Bar
- * - Dual sidebars (both visible simultaneously)
- * - No bottom panel region
- * - Main editor area in center
+ * Mode-aware shell that adapts based on view mode preference:
+ * - KB View mode: Obsidian-inspired layout (dual sidebars, no bottom panel)
+ * - Developer mode: Standard Theia IDE layout
  */
 @injectable()
 export class KBViewShell extends ApplicationShell {
+    @inject(PreferenceService)
+    protected readonly preferenceService: PreferenceService;
+
+    protected viewMode: ViewMode = 'developer';
+
     @postConstruct()
     protected override init(): void {
+        // Read view mode preference before initializing
+        this.viewMode = this.preferenceService.get<ViewMode>(KB_VIEW_MODE_PREFERENCE, 'developer');
+        console.log(`[KBViewShell] Initializing with mode: ${this.viewMode}`);
+
         super.init();
         this.addClass('kb-view-shell');
-        console.log('[KBViewShell] Initialized KB View shell');
+
+        if (this.viewMode === 'kb-view') {
+            this.addClass('kb-view-mode');
+        }
     }
 
     /**
-     * Create custom layout: [Ribbon | Left Sidebar | Main | Right Sidebar | Ribbon]
+     * Create layout based on view mode:
+     * - KB View mode: Custom layout with dual sidebars, no bottom panel
+     * - Developer mode: Standard Theia IDE layout
+     */
+    protected override createLayout(): Layout {
+        if (this.viewMode === 'kb-view') {
+            return this.createKBViewLayout();
+        } else {
+            console.log('[KBViewShell] Using standard layout (developer mode)');
+            return super.createLayout();
+        }
+    }
+
+    /**
+     * Create custom KB View layout: [Ribbon | Left Sidebar | Main | Right Sidebar | Ribbon]
      * No bottom panel region.
      */
-    protected override createLayout(): BoxLayout {
+    protected createKBViewLayout(): BoxLayout {
         console.log('[KBViewShell] Creating custom KB View layout');
 
         // Create horizontal split: Left Panel | Main | Right Panel
@@ -72,12 +99,12 @@ export class KBViewShell extends ApplicationShell {
     }
 
     /**
-     * Override to prevent bottom panel from being used
+     * Override to prevent bottom panel from being used in KB View mode
      */
     override async addWidget(widget: Widget, options?: ApplicationShell.WidgetOptions): Promise<void> {
-        // If someone tries to add to bottom panel, redirect to main area
-        if (options?.area === 'bottom') {
-            console.warn('[KBViewShell] Bottom panel not available in KB View, redirecting to main area');
+        // In KB View mode, redirect bottom panel widgets to main area
+        if (this.viewMode === 'kb-view' && options?.area === 'bottom') {
+            console.warn('[KBViewShell] Bottom panel not available in KB View mode, redirecting to main area');
             return super.addWidget(widget, { ...options, area: 'main' });
         }
 

@@ -17,17 +17,26 @@
 import { ContainerModule } from '@theia/core/shared/inversify';
 import { bindContributionProvider } from '@theia/core/lib/common/contribution-provider';
 import { WidgetFactory } from '@theia/core/lib/browser/widget-manager';
+import { PreferenceContribution } from '@theia/core/lib/common/preferences/preference-schema';
 import { SidebarService, RibbonItemRegistry, RibbonContribution } from '../common/kb-view-protocol';
 import { SidebarServiceImpl } from './sidebar/sidebar-service';
 import { RibbonItemRegistryImpl } from './ribbon/ribbon-registry';
 import { DefaultRibbonContribution } from './ribbon/default-ribbon-contribution';
 import { RibbonWidget } from './ribbon/ribbon-widget';
-// import { KBViewShell } from './shell/kb-view-shell';
-// import { ApplicationShell } from '@theia/core/lib/browser/shell/application-shell';
+import { ViewModeService } from './view-mode-service';
+import { KB_VIEW_PREFERENCES_SCHEMA } from './kb-view-preferences';
+import { KBViewShell } from './shell/kb-view-shell';
+import { ApplicationShell } from '@theia/core/lib/browser/shell/application-shell';
 
 import '../../src/browser/style/ribbon.css';
 
-export default new ContainerModule((bind /* , unbind, isBound, rebind */) => {
+export default new ContainerModule((bind, unbind, isBound, rebind) => {
+    // Preferences
+    bind(PreferenceContribution).toConstantValue({ schema: KB_VIEW_PREFERENCES_SCHEMA });
+
+    // View mode service
+    bind(ViewModeService).toSelf().inSingletonScope();
+
     // Sidebar service
     bind(SidebarService).to(SidebarServiceImpl).inSingletonScope();
 
@@ -49,12 +58,12 @@ export default new ContainerModule((bind /* , unbind, isBound, rebind */) => {
         }))
         .inSingletonScope();
 
-    // DISABLED - TEST: Replace ApplicationShell with KBViewShell
-    // KBViewShell proof-of-concept validated. Will be enabled via ViewModeService.
-    // console.log('[kb-view] TEST MODE: Replacing ApplicationShell with KBViewShell');
-    // if (isBound(ApplicationShell)) {
-    //     rebind(ApplicationShell).to(KBViewShell).inSingletonScope();
-    // } else {
-    //     bind(ApplicationShell).to(KBViewShell).inSingletonScope();
-    // }
+    // Replace ApplicationShell with KBViewShell
+    // KBViewShell checks preference at runtime to determine layout mode
+    console.log('[kb-view] Replacing ApplicationShell with KBViewShell (mode-aware)');
+    if (isBound(ApplicationShell)) {
+        rebind(ApplicationShell).to(KBViewShell).inSingletonScope();
+    } else {
+        bind(ApplicationShell).to(KBViewShell).inSingletonScope();
+    }
 });
