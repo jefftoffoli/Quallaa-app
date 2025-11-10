@@ -16,10 +16,14 @@
 
 import { ContainerModule } from '@theia/core/shared/inversify';
 import { bindContributionProvider } from '@theia/core/lib/common/contribution-provider';
+import { WidgetFactory } from '@theia/core/lib/browser/widget-manager';
 import { SidebarService, RibbonItemRegistry, RibbonContribution } from '../common/kb-view-protocol';
 import { SidebarServiceImpl } from './sidebar/sidebar-service';
 import { RibbonItemRegistryImpl } from './ribbon/ribbon-registry';
 import { DefaultRibbonContribution } from './ribbon/default-ribbon-contribution';
+import { RibbonWidget } from './ribbon/ribbon-widget';
+
+import '../../src/browser/style/ribbon.css';
 
 export default new ContainerModule(bind => {
     // Sidebar service
@@ -33,4 +37,13 @@ export default new ContainerModule(bind => {
 
     // Default ribbon items
     bind(RibbonContribution).to(DefaultRibbonContribution).inSingletonScope();
+
+    // Ribbon widget
+    bind(RibbonWidget).toSelf();
+    bind(WidgetFactory)
+        .toDynamicValue(ctx => ({
+            id: RibbonWidget.ID,
+            createWidget: () => ctx.container.get<RibbonWidget>(RibbonWidget),
+        }))
+        .inSingletonScope();
 });

@@ -1,0 +1,93 @@
+/********************************************************************************
+ * Copyright (C) 2025 Jeff Toffoli
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v. 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0.
+ *
+ * This Source Code may also be made available under the following Secondary
+ * Licenses when the conditions for such availability set forth in the Eclipse
+ * Public License v. 2.0 are satisfied: GNU General Public License, version 2
+ * with the GNU Classpath Exception which is available at
+ * https://www.gnu.org/software/classpath/license.html.
+ *
+ * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0
+ ********************************************************************************/
+
+.kb-ribbon {
+    display: flex;
+    flex-direction: column;
+    width: 48px;
+    min-width: 48px;
+    max-width: 48px;
+    height: 100%;
+    background-color: var(--theia-activityBar-background);
+    border-right: 1px solid var(--theia-activityBar-border);
+}
+
+.kb-ribbon-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    justify-content: space-between;
+}
+
+.kb-ribbon-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.kb-ribbon-top {
+    padding-top: 8px;
+}
+
+.kb-ribbon-bottom {
+    padding-bottom: 8px;
+}
+
+.kb-ribbon-item {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--theia-activityBar-foreground);
+    transition: background-color 0.1s ease;
+    position: relative;
+}
+
+.kb-ribbon-item:hover {
+    background-color: var(--theia-activityBar-inactiveForeground);
+}
+
+.kb-ribbon-item.active {
+    background-color: var(--theia-activityBar-activeBorder);
+    color: var(--theia-activityBar-activeForeground);
+}
+
+.kb-ribbon-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: var(--theia-activityBar-activeBorder);
+}
+
+.kb-ribbon-item i {
+    font-size: 20px;
+}
+
+/* Right side ribbon (mirrored) */
+.kb-ribbon.kb-ribbon-right {
+    border-right: none;
+    border-left: 1px solid var(--theia-activityBar-border);
+}
+
+.kb-ribbon.kb-ribbon-right .kb-ribbon-item.active::before {
+    left: auto;
+    right: 0;
+}
