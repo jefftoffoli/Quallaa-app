@@ -17,17 +17,17 @@
 import { ContainerModule } from '@theia/core/shared/inversify';
 import { bindContributionProvider } from '@theia/core/lib/common/contribution-provider';
 import { WidgetFactory } from '@theia/core/lib/browser/widget-manager';
-import { ApplicationShell } from '@theia/core/lib/browser/shell/application-shell';
 import { SidebarService, RibbonItemRegistry, RibbonContribution } from '../common/kb-view-protocol';
 import { SidebarServiceImpl } from './sidebar/sidebar-service';
 import { RibbonItemRegistryImpl } from './ribbon/ribbon-registry';
 import { DefaultRibbonContribution } from './ribbon/default-ribbon-contribution';
 import { RibbonWidget } from './ribbon/ribbon-widget';
-import { KBViewShell } from './shell/kb-view-shell';
+// import { KBViewShell } from './shell/kb-view-shell';
+// import { ApplicationShell } from '@theia/core/lib/browser/shell/application-shell';
 
 import '../../src/browser/style/ribbon.css';
 
-export default new ContainerModule((bind, unbind, isBound, rebind) => {
+export default new ContainerModule((bind /* , unbind, isBound, rebind */) => {
     // Sidebar service
     bind(SidebarService).to(SidebarServiceImpl).inSingletonScope();
 
@@ -49,11 +49,12 @@ export default new ContainerModule((bind, unbind, isBound, rebind) => {
         }))
         .inSingletonScope();
 
-    // TEST: Replace ApplicationShell with KBViewShell
-    console.log('[kb-view] TEST MODE: Replacing ApplicationShell with KBViewShell');
-    if (isBound(ApplicationShell)) {
-        rebind(ApplicationShell).to(KBViewShell).inSingletonScope();
-    } else {
-        bind(ApplicationShell).to(KBViewShell).inSingletonScope();
-    }
+    // DISABLED - TEST: Replace ApplicationShell with KBViewShell
+    // KBViewShell proof-of-concept validated. Will be enabled via ViewModeService.
+    // console.log('[kb-view] TEST MODE: Replacing ApplicationShell with KBViewShell');
+    // if (isBound(ApplicationShell)) {
+    //     rebind(ApplicationShell).to(KBViewShell).inSingletonScope();
+    // } else {
+    //     bind(ApplicationShell).to(KBViewShell).inSingletonScope();
+    // }
 });
