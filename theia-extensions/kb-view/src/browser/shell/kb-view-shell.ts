@@ -35,8 +35,9 @@ export class KBViewShell extends ApplicationShell {
 
     @postConstruct()
     protected override init(): void {
-        // Read view mode preference before initializing
-        this.viewMode = this.preferenceService.get<ViewMode>(KB_VIEW_MODE_PREFERENCE, 'developer');
+        // Read view mode preference
+        // NOTE: PreferenceService may not be fully initialized yet, so it may return the default value
+        this.viewMode = this.preferenceService.get<ViewMode>(KB_VIEW_MODE_PREFERENCE, 'kb-view');
         console.log(`[KBViewShell] Initializing with mode: ${this.viewMode}`);
 
         super.init();

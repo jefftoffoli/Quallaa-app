@@ -25,7 +25,7 @@ export const KB_VIEW_PREFERENCES_SCHEMA: PreferenceSchema = {
         [KB_VIEW_MODE_PREFERENCE]: {
             type: 'string',
             enum: ['kb-view', 'developer'],
-            default: 'developer',
+            default: 'kb-view', // Default to KB View mode
             description: 'View mode: KB View (knowledge-first) or Developer View (full IDE)',
             scope: PreferenceScope.User,
         },

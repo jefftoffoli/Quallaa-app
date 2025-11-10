@@ -58,9 +58,12 @@ export default new ContainerModule((bind, unbind, isBound, rebind) => {
         }))
         .inSingletonScope();
 
-    // Replace ApplicationShell with KBViewShell
-    // KBViewShell checks preference at runtime to determine layout mode
-    console.log('[kb-view] Replacing ApplicationShell with KBViewShell (mode-aware)');
+    // IMPORTANT: Always rebind ApplicationShell to KBViewShell
+    // KBViewShell will check the preference and choose the appropriate layout
+    // NOTE: Due to timing issues with PreferenceService initialization, the preference
+    // is read synchronously from settings.json on the backend. This is set by
+    // the kb-view backend module before the frontend loads.
+    console.log('[kb-view] Replacing ApplicationShell with KBViewShell');
     if (isBound(ApplicationShell)) {
         rebind(ApplicationShell).to(KBViewShell).inSingletonScope();
     } else {
