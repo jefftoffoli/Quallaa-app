@@ -15,10 +15,22 @@
  ********************************************************************************/
 
 import { ContainerModule } from '@theia/core/shared/inversify';
-import { SidebarService } from '../common/kb-view-protocol';
+import { bindContributionProvider } from '@theia/core/lib/common/contribution-provider';
+import { SidebarService, RibbonItemRegistry, RibbonContribution } from '../common/kb-view-protocol';
 import { SidebarServiceImpl } from './sidebar/sidebar-service';
+import { RibbonItemRegistryImpl } from './ribbon/ribbon-registry';
+import { DefaultRibbonContribution } from './ribbon/default-ribbon-contribution';
 
 export default new ContainerModule(bind => {
     // Sidebar service
     bind(SidebarService).to(SidebarServiceImpl).inSingletonScope();
+
+    // Ribbon registry
+    bind(RibbonItemRegistry).to(RibbonItemRegistryImpl).inSingletonScope();
+
+    // Ribbon contribution point
+    bindContributionProvider(bind, RibbonContribution);
+
+    // Default ribbon items
+    bind(RibbonContribution).to(DefaultRibbonContribution).inSingletonScope();
 });

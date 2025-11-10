@@ -37,7 +37,10 @@ export interface RibbonItemRegistry {
     unregisterItem(id: string): void;
     getItems(): RibbonItem[];
     getItem(id: string): RibbonItem | undefined;
+    onDidChange: Event<void>;
 }
+
+export const RibbonItemRegistry = Symbol('RibbonItemRegistry');
 
 /**
  * Contribution point for ribbon items
