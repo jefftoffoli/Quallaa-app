@@ -47,6 +47,10 @@ export class SidebarWidget extends BaseWidget {
         this.addClass('kb-sidebar');
         this.addClass(`kb-sidebar-${side}`);
 
+        // Set minimum size to ensure visibility
+        this.node.style.minWidth = '250px';
+        this.node.style.width = '250px';
+
         // Create container for panels
         this.containerPanel = new BoxPanel({ direction: 'top-to-bottom' });
         this.containerPanel.addClass('kb-sidebar-container');
@@ -58,6 +62,38 @@ export class SidebarWidget extends BaseWidget {
         const layout = new PanelLayout();
         this.layout = layout;
         layout.addWidget(this.containerPanel);
+
+        // Add placeholder content for testing (will be replaced when panels are added)
+        this.addPlaceholderContent();
+    }
+
+    protected addPlaceholderContent(): void {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'kb-sidebar-empty';
+        placeholder.style.cssText = `
+            padding: 24px;
+            text-align: center;
+            color: var(--kb-text-tertiary);
+            font-size: var(--kb-text-sm);
+        `;
+
+        // Create elements safely without innerHTML
+        const icon = document.createElement('div');
+        icon.textContent = '📚';
+        icon.style.cssText = 'font-size: 48px; margin-bottom: 16px; opacity: 0.5;';
+
+        const title = document.createElement('div');
+        title.textContent = `${this.side === 'left' ? 'Left' : 'Right'} Sidebar`;
+        title.style.cssText = 'font-weight: 600; margin-bottom: 8px; color: var(--kb-text-secondary);';
+
+        const desc = document.createElement('div');
+        desc.textContent = 'KB View Mode Active';
+        desc.style.cssText = 'font-size: 12px;';
+
+        placeholder.appendChild(icon);
+        placeholder.appendChild(title);
+        placeholder.appendChild(desc);
+        this.node.appendChild(placeholder);
     }
 
     /**
@@ -126,7 +162,8 @@ export class SidebarWidget extends BaseWidget {
         }
 
         // Remove from container
-        widget.parent = undefined;
+        // eslint-disable-next-line no-null/no-null
+        widget.parent = null;
         this.visiblePanels.delete(id);
 
         console.log(`[SidebarWidget] Hid panel: ${id} in ${this.side} sidebar`);

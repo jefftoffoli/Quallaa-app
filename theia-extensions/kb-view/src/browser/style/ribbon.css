@@ -14,17 +14,130 @@
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0
  ********************************************************************************/
 
+/**
+ * Ribbon Widget Styles
+ *
+ * Obsidian-inspired vertical icon bar using Quallaa design tokens.
+ * Replaces Theia's Activity Bar in KB View mode.
+ */
+
+/* ============================================================================
+   RIBBON CONTAINER
+   Fixed-width vertical bar at the far left edge
+   ============================================================================ */
+
 .kb-ribbon {
     display: flex;
     flex-direction: column;
-    width: 48px;
-    min-width: 48px;
-    max-width: 48px;
+    width: var(--kb-ribbon-width);
+    min-width: var(--kb-ribbon-width);
+    max-width: var(--kb-ribbon-width);
     height: 100%;
-    background-color: var(--theia-activityBar-background);
-    border-right: 1px solid var(--theia-activityBar-border);
+    background: var(--kb-ribbon-bg);
+    border-right: 1px solid var(--kb-border-color);
+    padding: var(--kb-space-xs) 0;
+    gap: 4px; /* Tight spacing between icons */
+    overflow-y: auto;
+    overflow-x: hidden;
+    flex-shrink: 0; /* Don't let split panels compress */
 }
 
+/* ============================================================================
+   RIBBON ITEMS
+   Individual clickable icon buttons
+   ============================================================================ */
+
+.kb-ribbon-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 40px;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    border: none;
+    border-radius: var(--kb-radius-sm);
+    color: var(--kb-interactive-normal);
+    cursor: pointer;
+    position: relative;
+    transition: all var(--kb-transition-fast) var(--kb-ease-out);
+}
+
+.kb-ribbon-item:hover {
+    background: var(--kb-bg-hover);
+    color: var(--kb-interactive-hover);
+}
+
+.kb-ribbon-item:active {
+    background: var(--kb-bg-active);
+    transform: scale(0.95);
+}
+
+/* Active state - primary brand color */
+.kb-ribbon-item.active {
+    background: var(--kb-primary);
+    color: var(--kb-white);
+}
+
+/* Active indicator bar (left edge) */
+.kb-ribbon-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 8px;
+    bottom: 8px;
+    width: 3px;
+    background: var(--kb-accent);
+    border-radius: 0 var(--kb-radius-sm) var(--kb-radius-sm) 0;
+}
+
+/* ============================================================================
+   RIBBON ITEM ICON
+   ============================================================================ */
+
+.kb-ribbon-item-icon {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+}
+
+/* Codicons and other icon fonts */
+.kb-ribbon-item-icon::before {
+    font-family: 'codicon';
+    display: inline-block;
+}
+
+/* ============================================================================
+   RIBBON GROUPS
+   Top and bottom groups with divider
+   ============================================================================ */
+
+.kb-ribbon-group-top {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 0 0 auto;
+}
+
+.kb-ribbon-group-bottom {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: auto; /* Push to bottom */
+    flex: 0 0 auto;
+}
+
+.kb-ribbon-divider {
+    height: 1px;
+    background: var(--kb-border-color);
+    margin: var(--kb-space-xs) var(--kb-space-sm);
+}
+
+/* Legacy class names for compatibility */
 .kb-ribbon-container {
     display: flex;
     flex-direction: column;
@@ -39,57 +152,95 @@
 }
 
 .kb-ribbon-top {
-    padding-top: 8px;
+    padding-top: var(--kb-space-xs);
 }
 
 .kb-ribbon-bottom {
-    padding-bottom: 8px;
-}
-
-.kb-ribbon-item {
-    width: 48px;
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    color: var(--theia-activityBar-foreground);
-    transition: background-color 0.1s ease;
-    position: relative;
-}
-
-.kb-ribbon-item:hover {
-    background-color: var(--theia-activityBar-inactiveForeground);
-}
-
-.kb-ribbon-item.active {
-    background-color: var(--theia-activityBar-activeBorder);
-    color: var(--theia-activityBar-activeForeground);
-}
-
-.kb-ribbon-item.active::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background-color: var(--theia-activityBar-activeBorder);
+    padding-bottom: var(--kb-space-xs);
 }
 
 .kb-ribbon-item i {
     font-size: 20px;
 }
 
-/* Right side ribbon (mirrored) */
+/* ============================================================================
+   TOOLTIP (appears on hover)
+   ============================================================================ */
+
+.kb-ribbon-item[title] {
+    position: relative;
+}
+
+.kb-ribbon-item[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    left: calc(100% + 8px);
+    top: 50%;
+    transform: translateY(-50%);
+    padding: var(--kb-space-xs) var(--kb-space-sm);
+    background: var(--kb-card-bg);
+    color: var(--kb-text-primary);
+    border: 1px solid var(--kb-border-color);
+    border-radius: var(--kb-radius-md);
+    font-size: var(--kb-text-sm);
+    white-space: nowrap;
+    box-shadow: var(--kb-shadow-lg);
+    z-index: var(--kb-z-tooltip);
+    pointer-events: none;
+    animation: kb-tooltip-fade-in var(--kb-transition-fast) var(--kb-ease-out);
+}
+
+@keyframes kb-tooltip-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(-50%) translateX(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(-50%) translateX(0);
+    }
+}
+
+/* ============================================================================
+   RIGHT-SIDE RIBBON (if needed)
+   Mirror layout for right sidebar control
+   ============================================================================ */
+
 .kb-ribbon.kb-ribbon-right {
     border-right: none;
-    border-left: 1px solid var(--theia-activityBar-border);
+    border-left: 1px solid var(--kb-border-color);
 }
 
 .kb-ribbon.kb-ribbon-right .kb-ribbon-item.active::before {
     left: auto;
     right: 0;
+    border-radius: var(--kb-radius-sm) 0 0 var(--kb-radius-sm);
+}
+
+.kb-ribbon.kb-ribbon-right .kb-ribbon-item[title]:hover::after {
+    left: auto;
+    right: calc(100% + 8px);
+}
+
+/* ============================================================================
+   FOCUS STATES (Accessibility)
+   ============================================================================ */
+
+.kb-ribbon-item:focus-visible {
+    outline: 2px solid var(--kb-border-color-focus);
+    outline-offset: -2px;
+}
+
+/* ============================================================================
+   HIDE THEIA ACTIVITY BAR IN KB VIEW MODE
+   Since ribbon replaces it
+   ============================================================================ */
+
+.kb-view-mode .theia-app-left .theia-activity-bar,
+.kb-view-mode .theia-app-right .theia-activity-bar,
+.kb-view-mode .theia-app-left .theia-ActivityBar,
+.kb-view-mode .theia-app-right .theia-ActivityBar {
+    display: none;
 }
 
 /* KB View mode integration */
@@ -99,7 +250,62 @@
     flex-grow: 0;
 }
 
-/* Hide activity bar in KB View mode (ribbon replaces it) */
-.kb-view-mode .theia-app-left .theia-ActivityBar {
-    display: none;
+/* ============================================================================
+   LOADING STATE
+   ============================================================================ */
+
+.kb-ribbon.loading {
+    pointer-events: none;
+    opacity: 0.5;
+}
+
+/* ============================================================================
+   SCROLLBAR STYLING
+   ============================================================================ */
+
+.kb-ribbon::-webkit-scrollbar {
+    width: 4px;
+}
+
+.kb-ribbon::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.kb-ribbon::-webkit-scrollbar-thumb {
+    background: var(--kb-gray-400);
+    border-radius: var(--kb-radius-full);
+}
+
+.kb-ribbon::-webkit-scrollbar-thumb:hover {
+    background: var(--kb-gray-500);
+}
+
+/* ============================================================================
+   RESPONSIVE ADJUSTMENTS
+   Make ribbon slightly larger on high-DPI displays if needed
+   ============================================================================ */
+
+@media (min-resolution: 2dppx) {
+    .kb-ribbon-item-icon {
+        /* Icons may need slight size adjustment on retina displays */
+    }
+}
+
+/* ============================================================================
+   REDUCED MOTION PREFERENCE
+   Disable animations for accessibility
+   ============================================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+    .kb-ribbon-item {
+        transition: none;
+    }
+
+    .kb-ribbon-item:active {
+        transform: none;
+    }
+
+    .kb-ribbon-item[title]:hover::after {
+        animation: none;
+    }
 }

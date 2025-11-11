@@ -78,6 +78,21 @@ export class RibbonWidget extends ReactWidget {
 
         return (
             <div className="kb-ribbon-container">
+                {/* Test indicator - will be removed later */}
+                <div
+                    style={{
+                        padding: '8px 4px',
+                        textAlign: 'center',
+                        fontSize: '10px',
+                        fontWeight: 600,
+                        color: 'var(--kb-white)',
+                        background: 'var(--kb-primary)',
+                        borderRadius: 'var(--kb-radius-sm)',
+                        margin: '4px',
+                    }}
+                >
+                    KB VIEW
+                </div>
                 <div className="kb-ribbon-group kb-ribbon-top">{topItems.map(item => this.renderRibbonItem(item))}</div>
                 <div className="kb-ribbon-group kb-ribbon-bottom">{bottomItems.map(item => this.renderRibbonItem(item))}</div>
             </div>
@@ -88,7 +103,20 @@ export class RibbonWidget extends ReactWidget {
         const isActive = this.sidebarService.isVisible(item.side, item.panelId);
 
         return (
-            <div key={item.id} className={`kb-ribbon-item ${isActive ? 'active' : ''}`} title={item.tooltip} onClick={() => this.handleItemClick(item)}>
+            <div
+                key={item.id}
+                className={`kb-ribbon-item ${isActive ? 'active' : ''}`}
+                title={item.tooltip}
+                onClick={() => this.handleItemClick(item)}
+                onKeyDown={e => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        this.handleItemClick(item);
+                    }
+                }}
+                role="button"
+                tabIndex={0}
+            >
                 <i className={item.icon} />
             </div>
         );

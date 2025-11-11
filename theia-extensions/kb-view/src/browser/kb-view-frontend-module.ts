@@ -28,6 +28,9 @@ import { KB_VIEW_PREFERENCES_SCHEMA } from './kb-view-preferences';
 import { KBViewShell } from './shell/kb-view-shell';
 import { ApplicationShell } from '@theia/core/lib/browser/shell/application-shell';
 
+// Import CSS in order: tokens → utilities → components
+import '../../src/browser/style/design-tokens.css';
+import '../../src/browser/style/theme-utils.css';
 import '../../src/browser/style/ribbon.css';
 import '../../src/browser/style/sidebar.css';
 

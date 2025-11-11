@@ -51,8 +51,10 @@ export class KBViewShell extends ApplicationShell {
     @inject(SidebarServiceImpl)
     protected readonly sidebarService: SidebarServiceImpl;
 
+    @inject(RibbonWidget)
+    protected readonly ribbonWidget: RibbonWidget;
+
     protected viewMode: ViewMode = 'developer';
-    protected ribbonWidget: RibbonWidget | undefined;
     protected leftSidebar: SidebarWidget | undefined;
     protected rightSidebar: SidebarWidget | undefined;
 
@@ -76,13 +78,9 @@ export class KBViewShell extends ApplicationShell {
      */
     protected async initializeKBViewComponents(): Promise<void> {
         try {
-            // Create ribbon widget
-            this.ribbonWidget = await this.widgetManager.getOrCreateWidget<RibbonWidget>(RibbonWidget.ID);
+            // Configure ribbon widget (already injected)
             this.ribbonWidget.setSide('left');
-            console.log('[KBViewShell] Ribbon widget created');
-
-            // Ribbon will be added to layout when shell is fully initialized
-            // We can't modify layout during @postConstruct, so we'll add it afterward
+            console.log('[KBViewShell] Ribbon widget configured');
         } catch (error) {
             console.error('[KBViewShell] Failed to initialize KB View components:', error);
         }
@@ -142,15 +140,24 @@ export class KBViewShell extends ApplicationShell {
             spacing: 0,
         });
 
-        // Add widgets: Left Sidebar | Main Area | Right Sidebar
-        // Note: Ribbon will be inserted at position 0 later
+        // Add widgets: Ribbon | Left Sidebar | Main Area | Right Sidebar
+        horizontalSplit.addWidget(this.ribbonWidget);
         horizontalSplit.addWidget(this.leftSidebar);
         horizontalSplit.addWidget(mainAreaWidget);
         horizontalSplit.addWidget(this.rightSidebar);
 
-        // Set relative sizes: left sidebar (1), main (3), right sidebar (1)
-        // Will become [ribbon (0.5), left (1), main (3), right (1)] when ribbon added
-        horizontalSplit.setRelativeSizes([1, 3, 1]);
+        // Set minimum sizes using Lumino's API (not CSS)
+        this.ribbonWidget.node.style.minWidth = '48px';
+        this.leftSidebar.node.style.minWidth = '250px';
+        this.rightSidebar.node.style.minWidth = '250px';
+
+        console.log('[KBViewShell] Ribbon and sidebars added to layout');
+        console.log('[KBViewShell] Ribbon node:', this.ribbonWidget.node);
+        console.log('[KBViewShell] Left sidebar node:', this.leftSidebar.node);
+        console.log('[KBViewShell] Right sidebar node:', this.rightSidebar.node);
+
+        // Set relative sizes: ribbon (48px fixed), left sidebar (250px), main (flex), right sidebar (250px)
+        horizontalSplit.setRelativeSizes([48, 250, 1000, 250]);
 
         // Create root layout
         const rootLayout = new BoxLayout({ direction: 'left-to-right', spacing: 0 });
@@ -183,7 +190,7 @@ export class KBViewShell extends ApplicationShell {
     /**
      * Get ribbon widget (for customization).
      */
-    getRibbon(): RibbonWidget | undefined {
+    getRibbon(): RibbonWidget {
         return this.ribbonWidget;
     }
 }
