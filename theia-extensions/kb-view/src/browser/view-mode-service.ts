@@ -17,6 +17,8 @@
 import { injectable, inject, postConstruct, interfaces } from '@theia/core/shared/inversify';
 import { PreferenceService, PreferenceChange } from '@theia/core/lib/common/preferences/preference-service';
 import { ApplicationShell } from '@theia/core/lib/browser/shell/application-shell';
+import { MessageService } from '@theia/core/lib/common/message-service';
+import { WindowService } from '@theia/core/lib/browser/window/window-service';
 import { KBViewShell } from './shell/kb-view-shell';
 import { KB_VIEW_MODE_PREFERENCE } from './kb-view-preferences';
 
@@ -30,6 +32,12 @@ export type ViewMode = 'kb-view' | 'developer';
 export class ViewModeService {
     @inject(PreferenceService)
     protected readonly preferenceService: PreferenceService;
+
+    @inject(MessageService)
+    protected readonly messageService: MessageService;
+
+    @inject(WindowService)
+    protected readonly windowService: WindowService;
 
     protected currentMode: ViewMode = 'developer';
 
@@ -63,40 +71,33 @@ export class ViewModeService {
     /**
      * Switch to a new view mode.
      *
-     * CURRENT STATE: Just logs warning about reload requirement.
+     * IMPLEMENTATION: Reload-based approach (Phase 8.6)
      *
-     * TODO (Phase 8 - Shell Swapping):
-     * Implement actual shell replacement using DOM manipulation:
+     * Shows a confirmation dialog to the user and reloads the window
+     * if confirmed. The new mode preference is already saved, so the
+     * reload will use the new shell.
      *
-     * 1. Capture current state:
-     *    - const layoutData = currentShell.getLayoutData()
-     *    - Save open editors, panel visibility, etc.
-     *
-     * 2. Create new shell instance:
-     *    - const newShell = container.get(newMode === 'kb-view' ? KBViewShell : ApplicationShell)
-     *
-     * 3. Replace in DOM:
-     *    - const container = document.getElementById('theia-app-shell')
-     *    - container.innerHTML = ''
-     *    - newShell.attach(container)
-     *
-     * 4. Restore state:
-     *    - await newShell.setLayoutData(layoutData)
-     *
-     * 5. Update current mode:
-     *    - this.currentMode = newMode
-     *
-     * CHALLENGE: Preserving editor content and widget state across shell swap.
-     * May need to serialize/deserialize widget state.
+     * ALTERNATIVE APPROACH (not implemented):
+     * Runtime shell swapping would require complex DOM manipulation
+     * and state preservation. Decided reload is simpler and acceptable
+     * for MVP since mode switching is infrequent.
      */
-    protected switchMode(newMode: ViewMode): void {
+    protected async switchMode(newMode: ViewMode): Promise<void> {
         this.currentMode = newMode;
 
-        // Notify user that reload is required
-        console.warn('[ViewModeService] View mode changed. Application reload required to apply changes.');
+        const modeLabel = newMode === 'kb-view' ? 'KB View' : 'Developer View';
 
-        // TODO: Show notification dialog offering to reload
-        // For now, mode switching requires manual page reload
+        console.log(`[ViewModeService] Switching to ${modeLabel} mode`);
+
+        // Show confirmation dialog
+        const shouldReload = await this.messageService.info(`Switching to ${modeLabel} mode requires reloading the window. Reload now?`, 'Reload Now', 'Later');
+
+        if (shouldReload === 'Reload Now') {
+            console.log('[ViewModeService] Reloading window to apply new mode');
+            this.windowService.reload();
+        } else {
+            console.log('[ViewModeService] User chose to reload later. New mode will apply on next reload.');
+        }
     }
 
     /**

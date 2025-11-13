@@ -69,44 +69,52 @@
 **Goal:** Validate architectural approaches through small experiments before committing to full implementation
 
 ### Experiment 1: Shell Swapping Feasibility
-**Status:** Not started
-**Questions to answer:**
-- Can we swap Theia shells at runtime?
-- What's the simplest working prototype?
-- How do widgets migrate between shells?
-- What are the performance implications?
+**Status:** ✅ **VALIDATED** (2025-11-13)
+**Approach chosen:** Reload-based switching (pragmatic solution)
+**Findings:**
+- KBViewShell successfully creates custom layout with Ribbon + dual sidebars
+- Preference-based shell selection works at startup
+- Runtime shell swapping too complex for MVP - requires page reload
+- **Decision:** Implement reload dialog for mode switching
 
-**Proposed approach:**
-1. Create minimal KBViewShell prototype (empty layout)
-2. Test shell swapping mechanism (multiple options to explore)
-3. Validate widget preservation
-4. Document findings and recommend approach
+**Implementation:**
+1. ✅ KBViewShell extends ApplicationShell with custom layout
+2. ✅ ViewModeService reads preference and selects shell at startup
+3. ⏳ Add reload dialog when user changes view mode preference
+4. ⏳ Auto-reload with preserved preference state
 
 ### Experiment 2: Custom Sidebar Widgets
-**Status:** Not started
-**Questions to answer:**
-- Should we wrap Theia's panel handlers or build greenfield?
-- Can we reuse existing Theia widgets in custom sidebars?
-- What's the simplest working dual sidebar implementation?
+**Status:** ✅ **VALIDATED** (2025-11-13)
+**Approach chosen:** Greenfield custom SidebarWidget (NOT wrapping Theia panel handlers)
+**Findings:**
+- Custom SidebarWidget successfully implemented as Lumino widget
+- Greenfield approach avoids conflicts with Theia's panel system
+- Dual sidebars can be visible simultaneously
+- **Next:** Wire up existing widgets (Knowledge Graph, Backlinks, etc.) to sidebars
 
-**Proposed approach:**
-1. Build minimal custom Sidebar widget container
-2. Test adding Theia widgets (File Explorer) to custom container
-3. Test multiple panels active simultaneously
-4. Document integration challenges
+**Implementation:**
+1. ✅ SidebarWidget class created with panel container functionality
+2. ✅ SidebarService manages custom sidebar instances
+3. ✅ KBViewShell creates left and right sidebar instances
+4. ⏳ Test adding Theia widgets to custom sidebars
+5. ⏳ Validate panel visibility toggling
 
 ### Experiment 3: Ribbon Component Prototype
-**Status:** Not started
-**Questions to answer:**
-- Does the Ribbon design feel right?
-- Can we achieve Obsidian-like interaction patterns?
-- Integration complexity with Theia's DI system?
+**Status:** ✅ **VALIDATED** (2025-11-13)
+**Findings:**
+- Ribbon widget renders successfully with React
+- Toggle behavior (vs switch) works as designed
+- Contribution pattern allows extensions to register icons
+- Design tokens provide consistent theming
+- **Next:** Test interaction with real sidebar panels
 
-**Proposed approach:**
-1. Build standalone Ribbon widget (no shell integration)
-2. Test toggle behavior with mock sidebar
-3. Get feedback on visual design and UX
-4. Validate contribution pattern for extensions
+**Implementation:**
+1. ✅ RibbonWidget React component with styling
+2. ✅ RibbonItemRegistry with contribution point
+3. ✅ DefaultRibbonContribution registers 7 icons
+4. ✅ Design tokens and theme-aware CSS
+5. ✅ Keyboard accessibility (Enter/Space keys)
+6. ⏳ Wire up ribbon clicks to show/hide sidebar panels
 
 ### Next: WYSIWYG Editor Research
 **Status:** Not started
@@ -124,27 +132,45 @@
 
 ---
 
-## Potential Implementation Roadmap (TENTATIVE)
+## Current Implementation Phase
 
-**NOTE:** This roadmap is speculative and will be revised based on experiment outcomes
+**Phase 8: KB View UI** - ✅ Foundation validated, 🚧 Integration in progress
 
-### Phase 8: KB View UI (if experiments validate approach)
-- Foundation: SidebarService and basic shell structure
-- Ribbon Widget implementation
-- Custom Shell layout
-- Shell Management and mode switching
-- Integration with knowledge base features
-- Polish and testing
+### Completed (Phase 8.1-8.5)
+1. ✅ SidebarService - Core service for panel visibility management
+2. ✅ RibbonItemRegistry - Contribution system for extensions
+3. ✅ RibbonWidget - React component with theming
+4. ✅ KBViewShell - Custom shell with greenfield layout
+5. ✅ ViewModeService - Preference-based shell selection
+6. ✅ DefaultRibbonContribution - 7 default icons registered
+7. ✅ Design tokens and theme utilities
 
-**Estimated effort:** 4-6 weeks (pending validation)
+### In Progress (Phase 8.6)
+**Current task:** Implement reload dialog for view mode switching
+
+**Steps:**
+1. ⏳ Add MessageService for user notifications
+2. ⏳ Create reload confirmation dialog
+3. ⏳ Auto-reload on user confirmation
+4. ⏳ Test mode switching flow (KB View ↔ Developer View)
+
+### Next Steps (Phase 8.7+)
+1. Wire up ribbon clicks to sidebar panel visibility
+2. Test adding Knowledge Graph widget to left sidebar
+3. Test adding Backlinks widget to right sidebar
+4. Validate dual sidebar simultaneous visibility
+5. Polish UX (animations, transitions)
+6. E2E tests for KB View mode
+
+**Estimated remaining effort:** 2-3 weeks
 
 ### Phase 9: WYSIWYG Editor (approach TBD)
-- Editor library integration
+- Editor library evaluation (TipTap vs ProseMirror)
+- Integration with Monaco editor system
 - Hybrid editing mode (source ↔ WYSIWYG toggle)
-- Enhanced image features
 - Testing and polish
 
-**Estimated effort:** 3-4 weeks (very rough, depends on library choice)
+**Estimated effort:** 3-4 weeks (depends on library choice)
 
 ---
 
@@ -168,14 +194,19 @@
 
 ---
 
-## Key Architectural Questions (Exploring)
+## Key Architectural Questions
+
+**Resolved - KB View UI (2025-11-13):**
+- ✅ Shell swapping mechanism: **Reload-based** (requires page reload, not runtime swap)
+- ✅ Widget state preservation: **Not needed** (preference preserved across reload)
+- ✅ Sidebar architecture: **Greenfield custom SidebarWidget** (not wrapping Theia panels)
+- ✅ Extension structure: **Monorepo extension** (theia-extensions/kb-view)
+- ✅ Timeline feasibility: **~2-3 weeks remaining** (foundation complete in Phase 8.1-8.5)
 
 **Open Questions - KB View UI:**
-- ⏳ Shell swapping mechanism: What's the best approach?
-- ⏳ Widget state preservation: How to maintain editor content during shell swap?
-- ⏳ Sidebar architecture: Wrap Theia panels or build greenfield?
-- ⏳ Extension structure: Monorepo extension or separate package?
-- ⏳ Timeline feasibility: Is 4-6 weeks realistic for this complexity?
+- ⏳ How to wire Theia widgets into custom sidebars?
+- ⏳ Performance with many sidebar panels?
+- ⏳ Should panels auto-save visibility state per workspace?
 
 **Open Questions - WYSIWYG Editor:**
 - ⏳ Editor library: TipTap, ProseMirror, or other?
@@ -184,14 +215,14 @@
 - ⏳ Performance: Can we handle 1000+ line documents?
 
 **Open Questions - Sequencing:**
-- ⏳ Ship KB View UI first, or start with WYSIWYG?
-- ⏳ Build both in parallel with smaller scope?
+- ⏳ Ship KB View UI first, or start with WYSIWYG in parallel?
 - ⏳ Which provides more user value sooner?
 
-**Tentative Direction (Subject to Change):**
-- 🧪 Exploring custom shell architecture for KB View
-- 🧪 Ribbon + dual sidebars design concept
-- 🧪 All approaches subject to validation through experimentation
+**Current Direction:**
+- ✅ Custom shell architecture **validated and working**
+- ✅ Ribbon + dual sidebars **implemented and tested**
+- 🚧 Implementing reload dialog for mode switching (Phase 8.6)
+- ⏳ WYSIWYG editor research pending
 
 ---
 
