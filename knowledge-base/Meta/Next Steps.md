@@ -145,24 +145,48 @@
 6. ✅ DefaultRibbonContribution - 7 default icons registered
 7. ✅ Design tokens and theme utilities
 
-### In Progress (Phase 8.6)
-**Current task:** Implement reload dialog for view mode switching
+### Completed (Phase 8.7) - 2025-11-13
+**✅ Panel Wiring with Theia Lifecycle Pattern**
+
+**Major Discovery:** Correct Theia pattern for widget creation in custom shells
+- Never call `widgetManager.getOrCreateWidget()` in `@postConstruct`
+- Widget creation must happen in `FrontendApplicationContribution.onStart()` or command handlers
+- Researched Theia core (`ApplicationShellWithToolbarOverride`, `TerminalFrontendContribution`)
+- Documented lifecycle pattern: `@postConstruct` → setup only, `onStart()` → create widgets
+
+**Implementation:**
+1. ✅ Created `KBViewContribution` implementing `FrontendApplicationContribution`
+2. ✅ Created `KBViewPanelManager` to wire KB widgets to sidebars
+3. ✅ Moved panel initialization from `@postConstruct` to `onStart()` lifecycle hook
+4. ✅ Fixed ribbon to show items for BOTH left and right sidebars (Obsidian-style)
+5. ✅ All 6 E2E tests passing (panel manager initialization, ribbon items, etc.)
+6. ✅ Panels registered in sidebars (Knowledge Graph, Backlinks, Tags)
+
+**Files Created:**
+- `kb-view-contribution.ts` - Lifecycle-based panel initialization
+- `kb-view-panel-manager.ts` - Maps KB widgets to sidebar panels
+
+**Files Modified:**
+- `kb-view-shell.ts` - Removed unsafe `@postConstruct` widget creation
+- `ribbon-widget.tsx` - Show all ribbon items (not filtered by side)
+- `kb-view-panels.spec.ts` - Updated tests for new behavior
+
+### In Progress (Phase 8.8)
+**Current task:** Test ribbon click interaction and panel visibility toggling
 
 **Steps:**
-1. ⏳ Add MessageService for user notifications
-2. ⏳ Create reload confirmation dialog
-3. ⏳ Auto-reload on user confirmation
-4. ⏳ Test mode switching flow (KB View ↔ Developer View)
+1. ⏳ Add E2E test for clicking ribbon items
+2. ⏳ Verify panels show/hide when clicking ribbon
+3. ⏳ Validate dual sidebar simultaneous visibility
+4. ⏳ Test panel state persistence
 
-### Next Steps (Phase 8.7+)
-1. Wire up ribbon clicks to sidebar panel visibility
-2. Test adding Knowledge Graph widget to left sidebar
-3. Test adding Backlinks widget to right sidebar
-4. Validate dual sidebar simultaneous visibility
-5. Polish UX (animations, transitions)
-6. E2E tests for KB View mode
+### Next Steps (Phase 8.9+)
+1. Polish UX (animations, transitions for panel show/hide)
+2. Implement reload dialog for view mode switching (Phase 8.6 deferred)
+3. Test mode switching flow (KB View ↔ Developer View)
+4. Performance testing with multiple panels
 
-**Estimated remaining effort:** 2-3 weeks
+**Estimated remaining effort:** 1-2 weeks
 
 ### Phase 9: WYSIWYG Editor (approach TBD)
 - Editor library evaluation (TipTap vs ProseMirror)
@@ -203,10 +227,14 @@
 - ✅ Extension structure: **Monorepo extension** (theia-extensions/kb-view)
 - ✅ Timeline feasibility: **~2-3 weeks remaining** (foundation complete in Phase 8.1-8.5)
 
+**Resolved Questions - KB View UI (Phase 8.7):**
+- ✅ How to wire Theia widgets into custom sidebars? **Use FrontendApplicationContribution.onStart() to call widgetManager.getOrCreateWidget(), then sidebar.addPanel()**
+- ✅ Widget creation timing: **Never in @postConstruct - only in lifecycle hooks or command handlers**
+
 **Open Questions - KB View UI:**
-- ⏳ How to wire Theia widgets into custom sidebars?
 - ⏳ Performance with many sidebar panels?
 - ⏳ Should panels auto-save visibility state per workspace?
+- ⏳ How to handle panel resize and layout persistence?
 
 **Open Questions - WYSIWYG Editor:**
 - ⏳ Editor library: TipTap, ProseMirror, or other?
@@ -296,7 +324,9 @@
 
 ## Change History
 
-**2025-11-13:** Updated to reflect exploration phase - KB View + WYSIWYG are top priorities, architecture not finalized
+**2025-11-13 (PM):** Phase 8.7 complete - Panel wiring implemented with correct Theia lifecycle pattern. Discovered critical widget creation timing rules. All E2E tests passing.
+
+**2025-11-13 (AM):** Updated to reflect exploration phase - KB View + WYSIWYG are top priorities, architecture not finalized
 
 **2025-11-09:** Initial custom shell architecture exploration, Phase 8 roadmap drafted
 
