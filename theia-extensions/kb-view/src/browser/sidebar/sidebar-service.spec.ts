@@ -85,13 +85,13 @@ describe('SidebarService', () => {
             newService.registerSidebars(newLeft as any as SidebarWidget, newRight as any as SidebarWidget);
 
             // Verify by trying to show a panel
-            newService.showPanel('test-panel', 'left');
+            newService.show('left', 'test-panel');
             // If no error, registration worked
             expect(true).to.be.true;
         });
     });
 
-    describe('showPanel', () => {
+    describe('show', () => {
         it('should show panel in left sidebar', () => {
             leftSidebar.addPanel('test-panel', {});
 
@@ -102,7 +102,7 @@ describe('SidebarService', () => {
                 }
             });
 
-            service.showPanel('test-panel', 'left');
+            service.show('left', 'test-panel');
 
             expect(shown).to.be.true;
         });
@@ -117,7 +117,7 @@ describe('SidebarService', () => {
                 }
             });
 
-            service.showPanel('test-panel', 'right');
+            service.show('right', 'test-panel');
 
             expect(shown).to.be.true;
         });
@@ -125,18 +125,18 @@ describe('SidebarService', () => {
         it('should emit visibility change event', done => {
             leftSidebar.addPanel('test-panel', {});
 
-            service.onPanelVisibilityChanged(event => {
+            service.onVisibilityChanged(event => {
                 expect(event.panelId).to.equal('test-panel');
                 expect(event.side).to.equal('left');
                 expect(event.visible).to.be.true;
                 done();
             });
 
-            service.showPanel('test-panel', 'left');
+            service.show('left', 'test-panel');
         });
     });
 
-    describe('hidePanel', () => {
+    describe('hide', () => {
         it('should hide panel in left sidebar', () => {
             leftSidebar.addPanel('test-panel', {});
 
@@ -147,7 +147,7 @@ describe('SidebarService', () => {
                 }
             });
 
-            service.hidePanel('test-panel', 'left');
+            service.hide('left', 'test-panel');
 
             expect(hidden).to.be.true;
         });
@@ -155,18 +155,18 @@ describe('SidebarService', () => {
         it('should emit visibility change event', done => {
             leftSidebar.addPanel('test-panel', {});
 
-            service.onPanelVisibilityChanged(event => {
+            service.onVisibilityChanged(event => {
                 expect(event.panelId).to.equal('test-panel');
                 expect(event.side).to.equal('left');
                 expect(event.visible).to.be.false;
                 done();
             });
 
-            service.hidePanel('test-panel', 'left');
+            service.hide('left', 'test-panel');
         });
     });
 
-    describe('togglePanel', () => {
+    describe('toggle', () => {
         it('should toggle panel in left sidebar', () => {
             leftSidebar.addPanel('test-panel', {});
 
@@ -175,7 +175,7 @@ describe('SidebarService', () => {
                 toggled = true;
             });
 
-            service.togglePanel('test-panel', 'left');
+            service.toggle('left', 'test-panel');
 
             expect(toggled).to.be.true;
         });
@@ -183,27 +183,27 @@ describe('SidebarService', () => {
         it('should emit visibility change event', done => {
             leftSidebar.addPanel('test-panel', {});
 
-            service.onPanelVisibilityChanged(event => {
+            service.onVisibilityChanged(event => {
                 expect(event.panelId).to.equal('test-panel');
                 expect(event.side).to.equal('left');
                 done();
             });
 
-            service.togglePanel('test-panel', 'left');
+            service.toggle('left', 'test-panel');
         });
     });
 
-    describe('isPanelVisible', () => {
+    describe('isVisible', () => {
         it('should return true for visible panel', () => {
             leftSidebar.addPanel('test-panel', {});
 
-            const visible = service.isPanelVisible('test-panel', 'left');
+            const visible = service.isVisible('left', 'test-panel');
 
             expect(visible).to.be.true;
         });
 
         it('should return false for non-existent panel', () => {
-            const visible = service.isPanelVisible('non-existent', 'left');
+            const visible = service.isVisible('left', 'non-existent');
 
             expect(visible).to.be.false;
         });
@@ -213,7 +213,7 @@ describe('SidebarService', () => {
         it('should forward visibility change events from sidebars', done => {
             leftSidebar.addPanel('test-panel', {});
 
-            service.onPanelVisibilityChanged(event => {
+            service.onVisibilityChanged(event => {
                 expect(event.panelId).to.equal('test-panel');
                 expect(event.side).to.equal('left');
                 done();

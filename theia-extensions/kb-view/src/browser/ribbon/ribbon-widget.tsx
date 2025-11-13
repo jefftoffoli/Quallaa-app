@@ -33,7 +33,6 @@ export class RibbonWidget extends ReactWidget {
     protected readonly sidebarService: SidebarService;
 
     protected items: RibbonItem[] = [];
-    protected side: 'left' | 'right' = 'left';
 
     @postConstruct()
     protected init(): void {
@@ -63,12 +62,14 @@ export class RibbonWidget extends ReactWidget {
     }
 
     setSide(side: 'left' | 'right'): void {
-        this.side = side;
+        // Note: Ribbon shows items for BOTH sides (Obsidian-style)
+        // This method kept for compatibility but doesn't filter items
         this.updateItems();
     }
 
     protected updateItems(): void {
-        this.items = this.registry.getItems().filter(item => item.side === this.side);
+        // Show ALL items (both left and right sidebar items)
+        this.items = this.registry.getItems();
         this.update();
     }
 

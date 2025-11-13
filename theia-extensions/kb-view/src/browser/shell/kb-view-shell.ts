@@ -75,12 +75,16 @@ export class KBViewShell extends ApplicationShell {
 
     /**
      * Initialize KB View specific components asynchronously.
+     *
+     * Note: Panel initialization happens in KBViewContribution.onStart() to follow
+     * Theia's pattern of calling WidgetManager in lifecycle hooks, not @postConstruct.
      */
     protected async initializeKBViewComponents(): Promise<void> {
         try {
             // Configure ribbon widget (already injected)
             this.ribbonWidget.setSide('left');
             console.log('[KBViewShell] Ribbon widget configured');
+            console.log('[KBViewShell] Panels will be initialized by KBViewContribution.onStart()');
         } catch (error) {
             console.error('[KBViewShell] Failed to initialize KB View components:', error);
         }

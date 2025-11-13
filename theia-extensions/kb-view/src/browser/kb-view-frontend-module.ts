@@ -18,6 +18,7 @@ import { ContainerModule } from '@theia/core/shared/inversify';
 import { bindContributionProvider } from '@theia/core/lib/common/contribution-provider';
 import { WidgetFactory } from '@theia/core/lib/browser/widget-manager';
 import { PreferenceContribution } from '@theia/core/lib/common/preferences/preference-schema';
+import { FrontendApplicationContribution } from '@theia/core/lib/browser';
 import { SidebarService, RibbonItemRegistry, RibbonContribution } from '../common/kb-view-protocol';
 import { SidebarServiceImpl } from './sidebar/sidebar-service';
 import { RibbonItemRegistryImpl } from './ribbon/ribbon-registry';
@@ -26,6 +27,8 @@ import { RibbonWidget } from './ribbon/ribbon-widget';
 import { ViewModeService } from './view-mode-service';
 import { KB_VIEW_PREFERENCES_SCHEMA } from './kb-view-preferences';
 import { KBViewShell } from './shell/kb-view-shell';
+import { KBViewPanelManager } from './kb-view-panel-manager';
+import { KBViewContribution } from './kb-view-contribution';
 import { ApplicationShell } from '@theia/core/lib/browser/shell/application-shell';
 
 // Import CSS in order: tokens → utilities → components
@@ -40,6 +43,13 @@ export default new ContainerModule((bind, unbind, isBound, rebind) => {
 
     // View mode service
     bind(ViewModeService).toSelf().inSingletonScope();
+
+    // Panel manager - wires KB widgets to sidebars
+    bind(KBViewPanelManager).toSelf().inSingletonScope();
+
+    // KB View contribution - initializes panels in onStart() lifecycle hook
+    bind(KBViewContribution).toSelf().inSingletonScope();
+    bind(FrontendApplicationContribution).toService(KBViewContribution);
 
     // Sidebar service - bind both interface and implementation
     bind(SidebarServiceImpl).toSelf().inSingletonScope();
