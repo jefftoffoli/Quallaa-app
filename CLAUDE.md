@@ -365,49 +365,6 @@ Always use Quallaa metadata in all `package.json` files:
 - App name: `"Quallaa"` (not "Theia IDE")
 - Config folder: `.quallaa` (not `.theia`)
 
-### Knowledge Base Documentation
-
-**The `knowledge-base/` directory** (in gitignore) contains private
-architectural documentation written in natural language, NOT tutorials or
-implementation guides.
-
-**Documentation Philosophy:**
-
-- **Purpose:** Provide high-level architectural context for AI assistants and
-  developers
-- **Style:** Natural language descriptions, physical metaphors, conceptual
-  explanations
-- **NOT:** Implementation tutorials, code examples, step-by-step guides
-
-**What to include:**
-
-- Architectural patterns and decisions
-- Physical metaphors (e.g., "LEGO bricks", "Museum Curator")
-- "What it is" and "Why we chose it" explanations
-- ASCII diagrams and visual layouts
-- Tables comparing approaches
-- Design principles and tradeoffs
-- Implementation roadmaps (checklists, not code)
-
-**What to AVOID:**
-
-- Detailed TypeScript/JavaScript code blocks
-- CSS styling examples
-- JSON configuration samples
-- TSX component implementations
-- Line-by-line code walkthroughs
-
-**When code is necessary:**
-
-- Use pseudo-code or bullet-point descriptions instead
-- Describe WHAT the code does, not HOW to write it
-- Example: "Factory creates widget instances with dependency injection" vs. full
-  class implementation
-
-**This policy applies ONLY to knowledge-base/ documentation.** The rest of the
-project (theia-extensions/, applications/, etc.) should absolutely have proper
-code implementations!
-
 ---
 
 ## File Patterns to Avoid Editing
@@ -666,11 +623,6 @@ yarn clean && rm -rf node_modules && yarn install
    `docs/MERGING_UPSTREAM.md`
 7. **Respect .gitignore** - Don't commit `knowledge-base/` directory (private
    docs)
-8. **Knowledge base documentation style** - RESIST adding code samples to
-   `knowledge-base/` architecture docs. Use natural language, metaphors, and
-   bullet points instead. See "Knowledge Base Documentation" section above. This
-   does NOT mean avoiding code elsewhere - write proper implementations in
-   `theia-extensions/` and `applications/`!
 
 **Common requests:**
 
@@ -681,5 +633,5 @@ yarn clean && rm -rf node_modules && yarn install
 
 ---
 
-**Last Updated:** 2025-11-10 (added knowledge-base documentation style guide)
-**Quallaa Version:** 1.66.100 **Based on Theia:** 1.66.1
+**Last Updated:** 2025-11-08 (after Theia 1.66.1 merge) **Quallaa Version:**
+1.66.100 **Based on Theia:** 1.66.1

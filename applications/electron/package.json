@@ -124,7 +124,6 @@
         "@theia/vsx-registry": "1.66.1",
         "@theia/workspace": "1.66.1",
         "fs-extra": "^9.0.1",
-        "quallaa-kb-view-ext": "1.66.100",
         "quallaa-knowledge-base-ext": "1.66.100",
         "quallaa-launcher-ext": "1.66.100",
         "quallaa-product-ext": "1.66.100",
