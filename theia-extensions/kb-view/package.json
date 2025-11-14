@@ -1,0 +1,49 @@
+{
+    "name": "quallaa-kb-view-ext",
+    "version": "1.66.100",
+    "description": "KB View mode for Quallaa - Obsidian-inspired knowledge management UI",
+    "license": "EPL-2.0",
+    "author": "Jeff Toffoli",
+    "homepage": "https://github.com/jefftoffoli/Quallaa-app#readme",
+    "bugs": {
+        "url": "https://github.com/jefftoffoli/Quallaa-app/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/jefftoffoli/Quallaa-app.git"
+    },
+    "keywords": [
+        "theia-extension",
+        "knowledge-management",
+        "obsidian",
+        "kb-view"
+    ],
+    "dependencies": {
+        "@theia/core": "1.66.1",
+        "@theia/filesystem": "1.66.1",
+        "@theia/workspace": "1.66.1",
+        "@theia/preferences": "1.66.1",
+        "@theia/navigator": "1.66.1"
+    },
+    "devDependencies": {
+        "rimraf": "^2.6.1",
+        "typescript": "~5.6.3"
+    },
+    "scripts": {
+        "build": "tsc -b",
+        "clean": "rimraf lib *.tsbuildinfo",
+        "compile": "tsc",
+        "watch": "tsc -w",
+        "lint": "theiaext lint",
+        "lint:fix": "theiaext lint --fix"
+    },
+    "files": [
+        "lib",
+        "src"
+    ],
+    "theiaExtensions": [
+        {
+            "frontend": "lib/browser/kb-view-frontend-module"
+        }
+    ]
+}
