@@ -28,6 +28,7 @@ import { KBViewExtensionDetector } from './kb-view-extension-detector';
 import { ModeStateManager } from './mode-state-manager';
 import { KBViewCommandFilter } from './kb-view-command-filter';
 import { KBViewMenuFilter } from './kb-view-menu-filter';
+import { KBViewCustomizationService } from './kb-view-customization-service';
 
 export default new ContainerModule(bind => {
     // Preference schema
@@ -53,6 +54,9 @@ export default new ContainerModule(bind => {
     // Command and menu filtering (Phase 7)
     bind(KBViewCommandFilter).toSelf().inSingletonScope();
     bind(KBViewMenuFilter).toSelf().inSingletonScope();
+
+    // User customization service (Phase 7.5)
+    bind(KBViewCustomizationService).toSelf().inSingletonScope();
 
     // Command and menu contributions
     bind(KBViewContribution).toSelf().inSingletonScope();

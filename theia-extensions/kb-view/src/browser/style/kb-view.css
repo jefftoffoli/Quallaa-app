@@ -32,3 +32,6 @@
 
 /* Phase 7: Menu & Command Filtering */
 @import './menu-filter.css';
+
+/* Phase 7.5: User Customization */
+@import './customization.css';
