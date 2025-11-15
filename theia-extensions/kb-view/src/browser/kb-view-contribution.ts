@@ -20,6 +20,7 @@ import { MenuContribution, MenuModelRegistry } from '@theia/core/lib/common/menu
 import { CommonMenus } from '@theia/core/lib/browser/common-frontend-contribution';
 import { ViewModeService } from './view-mode-service';
 import { MessageService } from '@theia/core/lib/common/message-service';
+import { KBViewWidgetManager } from './kb-view-widget-manager';
 
 export namespace KBViewCommands {
     export const TOGGLE_MODE: Command = {
@@ -49,10 +50,14 @@ export class KBViewContribution implements CommandContribution, MenuContribution
     @inject(MessageService)
     protected readonly messageService: MessageService;
 
+    @inject(KBViewWidgetManager)
+    protected readonly widgetManager: KBViewWidgetManager;
+
     @postConstruct()
     protected async init(): Promise<void> {
         // Initialize the service when the contribution is created
         await this.viewModeService.initialize();
+        // Widget manager initializes itself via @postConstruct
     }
 
     registerCommands(commands: CommandRegistry): void {

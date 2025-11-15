@@ -23,6 +23,7 @@ import { KBViewContribution } from './kb-view-contribution';
 import { KB_VIEW_PREFERENCES_SCHEMA } from './kb-view-preferences';
 import { KBViewLabelProvider } from './kb-view-label-provider';
 import { KBViewFileOperations } from './kb-view-file-operations';
+import { KBViewWidgetManager } from './kb-view-widget-manager';
 
 export default new ContainerModule(bind => {
     // Preference schema
@@ -37,6 +38,9 @@ export default new ContainerModule(bind => {
 
     // File operations service
     bind(KBViewFileOperations).toSelf().inSingletonScope();
+
+    // Widget manager for KB View mode
+    bind(KBViewWidgetManager).toSelf().inSingletonScope();
 
     // Command and menu contributions
     bind(KBViewContribution).toSelf().inSingletonScope();
