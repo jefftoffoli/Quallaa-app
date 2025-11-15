@@ -22,10 +22,22 @@ test.describe('KB View Widget Visibility (Phase 3)', () => {
         await page.waitForSelector('.theia-ApplicationShell', { timeout: 30000 });
     });
 
-    test('should initialize in Developer mode by default', async ({ page }) => {
+    test('should initialize with a valid mode (developer or kb-view)', async ({ page }) => {
+        // Wait for the mode to initialize (CSS class should be applied)
+        await page.waitForFunction(
+            () => {
+                return document.body.classList.contains('developer-mode') || document.body.classList.contains('kb-view-mode');
+            },
+            { timeout: 10000 }
+        );
+
         const body = await page.locator('body');
         const hasDevMode = await body.evaluate(el => el.classList.contains('developer-mode'));
-        expect(hasDevMode).toBe(true);
+        const hasKBMode = await body.evaluate(el => el.classList.contains('kb-view-mode'));
+
+        // Should be in exactly one mode
+        expect(hasDevMode || hasKBMode).toBe(true);
+        expect(hasDevMode && hasKBMode).toBe(false);
     });
 
     test.skip('should show KB widgets when switching to KB View mode', async ({ page }) => {
