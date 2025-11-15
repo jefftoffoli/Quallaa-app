@@ -29,3 +29,6 @@
 
 /* Phase 6: Transitions & Animations */
 @import './transitions.css';
+
+/* Phase 7: Menu & Command Filtering */
+@import './menu-filter.css';

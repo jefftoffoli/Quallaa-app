@@ -26,6 +26,8 @@ import { KBViewFileOperations } from './kb-view-file-operations';
 import { KBViewWidgetManager } from './kb-view-widget-manager';
 import { KBViewExtensionDetector } from './kb-view-extension-detector';
 import { ModeStateManager } from './mode-state-manager';
+import { KBViewCommandFilter } from './kb-view-command-filter';
+import { KBViewMenuFilter } from './kb-view-menu-filter';
 
 export default new ContainerModule(bind => {
     // Preference schema
@@ -48,8 +50,14 @@ export default new ContainerModule(bind => {
     // Extension detector for third-party widget handling
     bind(KBViewExtensionDetector).toSelf().inSingletonScope();
 
+    // Command and menu filtering (Phase 7)
+    bind(KBViewCommandFilter).toSelf().inSingletonScope();
+    bind(KBViewMenuFilter).toSelf().inSingletonScope();
+
     // Command and menu contributions
     bind(KBViewContribution).toSelf().inSingletonScope();
     bind(CommandContribution).toService(KBViewContribution);
+    bind(CommandContribution).toService(KBViewCommandFilter);
     bind(MenuContribution).toService(KBViewContribution);
+    bind(MenuContribution).toService(KBViewMenuFilter);
 });
