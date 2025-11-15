@@ -17,9 +17,12 @@
 import { ContainerModule } from '@theia/core/shared/inversify';
 import { CommandContribution, MenuContribution } from '@theia/core/lib/common';
 import { PreferenceContribution } from '@theia/core/lib/common/preferences';
+import { LabelProviderContribution } from '@theia/core/lib/browser/label-provider';
 import { ViewModeService, ViewModeServiceImpl } from './view-mode-service';
 import { KBViewContribution } from './kb-view-contribution';
 import { KB_VIEW_PREFERENCES_SCHEMA } from './kb-view-preferences';
+import { KBViewLabelProvider } from './kb-view-label-provider';
+import { KBViewFileOperations } from './kb-view-file-operations';
 
 export default new ContainerModule(bind => {
     // Preference schema
@@ -27,6 +30,13 @@ export default new ContainerModule(bind => {
 
     // Core service
     bind(ViewModeService).to(ViewModeServiceImpl).inSingletonScope();
+
+    // Label provider for file display customization
+    bind(KBViewLabelProvider).toSelf().inSingletonScope();
+    bind(LabelProviderContribution).toService(KBViewLabelProvider);
+
+    // File operations service
+    bind(KBViewFileOperations).toSelf().inSingletonScope();
 
     // Command and menu contributions
     bind(KBViewContribution).toSelf().inSingletonScope();

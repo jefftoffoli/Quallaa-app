@@ -34,8 +34,8 @@
         "clean": "rimraf lib *.tsbuildinfo",
         "compile": "tsc",
         "watch": "tsc -w",
-        "lint": "theiaext lint",
-        "lint:fix": "theiaext lint --fix"
+        "lint": "eslint --ext js,jsx,ts,tsx src",
+        "lint:fix": "eslint --ext js,jsx,ts,tsx src --fix"
     },
     "files": [
         "lib",
