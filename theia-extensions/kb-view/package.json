@@ -20,6 +20,7 @@
     ],
     "dependencies": {
         "@theia/core": "1.66.1",
+        "@theia/editor": "1.66.1",
         "@theia/filesystem": "1.66.1",
         "@theia/workspace": "1.66.1",
         "@theia/preferences": "1.66.1",

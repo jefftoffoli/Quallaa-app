@@ -25,13 +25,15 @@ import { KBViewLabelProvider } from './kb-view-label-provider';
 import { KBViewFileOperations } from './kb-view-file-operations';
 import { KBViewWidgetManager } from './kb-view-widget-manager';
 import { KBViewExtensionDetector } from './kb-view-extension-detector';
+import { ModeStateManager } from './mode-state-manager';
 
 export default new ContainerModule(bind => {
     // Preference schema
     bind(PreferenceContribution).toConstantValue({ schema: KB_VIEW_PREFERENCES_SCHEMA });
 
-    // Core service
+    // Core services
     bind(ViewModeService).to(ViewModeServiceImpl).inSingletonScope();
+    bind(ModeStateManager).toSelf().inSingletonScope();
 
     // Label provider for file display customization
     bind(KBViewLabelProvider).toSelf().inSingletonScope();

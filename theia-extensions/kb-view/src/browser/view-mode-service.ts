@@ -18,6 +18,7 @@ import { injectable, inject } from '@theia/core/shared/inversify';
 import { PreferenceService, PreferenceChange, PreferenceScope } from '@theia/core/lib/common/preferences';
 import { Emitter, Event } from '@theia/core/lib/common/event';
 import { ContextKeyService } from '@theia/core/lib/browser/context-key-service';
+import { ModeStateManager } from './mode-state-manager';
 
 export type ViewMode = 'kb-view' | 'developer';
 
@@ -38,6 +39,9 @@ export class ViewModeServiceImpl implements ViewModeService {
 
     @inject(ContextKeyService)
     protected readonly contextKeyService: ContextKeyService;
+
+    @inject(ModeStateManager)
+    protected readonly stateManager: ModeStateManager;
 
     private _currentMode: ViewMode = 'developer';
 
@@ -78,6 +82,12 @@ export class ViewModeServiceImpl implements ViewModeService {
         }
 
         const previousMode = this._currentMode;
+
+        // Step 1: Capture current state before switching
+        const currentState = await this.stateManager.captureState(previousMode);
+        await this.stateManager.saveState(previousMode, currentState);
+
+        // Step 2: Update mode
         this._currentMode = mode;
 
         // Update preference at User scope (persists across sessions)
@@ -90,7 +100,20 @@ export class ViewModeServiceImpl implements ViewModeService {
         // Update context key
         this.contextKeyService.setContext(this.KB_VIEW_CONTEXT_KEY, mode === 'kb-view');
 
-        // Notify listeners
+        // Step 3: Load and restore state for new mode
+        let savedState = await this.stateManager.loadState(mode);
+
+        // If no saved state exists and switching to KB View, use default
+        if (!savedState && mode === 'kb-view') {
+            savedState = this.stateManager.getDefaultKBViewState();
+        }
+
+        // Restore state if available
+        if (savedState) {
+            await this.stateManager.restoreState(savedState);
+        }
+
+        // Notify listeners (after state restoration is complete)
         this.onDidChangeModeEmitter.fire(mode);
     }
 
