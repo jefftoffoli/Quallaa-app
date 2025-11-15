@@ -24,6 +24,7 @@ import { KB_VIEW_PREFERENCES_SCHEMA } from './kb-view-preferences';
 import { KBViewLabelProvider } from './kb-view-label-provider';
 import { KBViewFileOperations } from './kb-view-file-operations';
 import { KBViewWidgetManager } from './kb-view-widget-manager';
+import { KBViewExtensionDetector } from './kb-view-extension-detector';
 
 export default new ContainerModule(bind => {
     // Preference schema
@@ -41,6 +42,9 @@ export default new ContainerModule(bind => {
 
     // Widget manager for KB View mode
     bind(KBViewWidgetManager).toSelf().inSingletonScope();
+
+    // Extension detector for third-party widget handling
+    bind(KBViewExtensionDetector).toSelf().inSingletonScope();
 
     // Command and menu contributions
     bind(KBViewContribution).toSelf().inSingletonScope();

@@ -26,7 +26,12 @@
         "@theia/navigator": "1.66.1"
     },
     "devDependencies": {
+        "@types/chai": "^4.2.18",
+        "@types/mocha": "^8.2.2",
+        "chai": "^4.3.4",
+        "mocha": "^8.4.0",
         "rimraf": "^2.6.1",
+        "ts-node": "^10.0.0",
         "typescript": "~5.6.3"
     },
     "scripts": {
@@ -34,6 +39,7 @@
         "clean": "rimraf lib *.tsbuildinfo",
         "compile": "tsc",
         "watch": "tsc -w",
+        "test": "mocha --require ts-node/register 'src/**/*.spec.ts'",
         "lint": "eslint --ext js,jsx,ts,tsx src",
         "lint:fix": "eslint --ext js,jsx,ts,tsx src --fix"
     },
