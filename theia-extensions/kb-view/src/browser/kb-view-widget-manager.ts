@@ -18,16 +18,10 @@ import { injectable, inject, postConstruct } from '@theia/core/shared/inversify'
 import { ApplicationShell, WidgetManager } from '@theia/core/lib/browser';
 import { ViewModeService, ViewMode } from './view-mode-service';
 import { PreferenceService } from '@theia/core/lib/common/preferences';
+import { KB_WIDGET_IDS } from './kb-view-constants';
 
-/**
- * Widget IDs for knowledge base widgets
- * These should match the IDs defined in the knowledge-base extension
- */
-export const KB_WIDGET_IDS = {
-    GRAPH: 'knowledge-graph',
-    TAGS: 'tags-widget',
-    BACKLINKS: 'backlinks-widget',
-} as const;
+// Re-export for backward compatibility
+export { KB_WIDGET_IDS };
 
 /**
  * Manages visibility of KB widgets based on current view mode.

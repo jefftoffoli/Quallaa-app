@@ -20,7 +20,7 @@ import { StorageService } from '@theia/core/lib/browser/storage-service';
 import { EditorManager } from '@theia/editor/lib/browser';
 import { URI } from '@theia/core/lib/common/uri';
 import { ViewMode } from './view-mode-service';
-import { KB_WIDGET_IDS } from './kb-view-widget-manager';
+import { KB_WIDGET_IDS } from './kb-view-constants';
 
 /**
  * State for a single widget (open/closed, area, rank)
