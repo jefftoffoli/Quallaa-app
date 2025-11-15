@@ -106,5 +106,31 @@ export class KBViewContribution implements CommandContribution, MenuContribution
             label: KBViewCommands.SWITCH_TO_DEVELOPER.label,
             order: '2',
         });
+
+        // Add direct action to KB View menu (top level)
+        menus.registerMenuAction(['menubar', '5_kb-view'], {
+            commandId: KBViewCommands.TOGGLE_MODE.id,
+            label: 'Toggle Mode',
+            order: '0',
+        });
+
+        // Add to KB View > Mode submenu
+        menus.registerMenuAction(['menubar', '5_kb-view', '3_mode'], {
+            commandId: KBViewCommands.SWITCH_TO_KB_VIEW.id,
+            label: 'KB View Mode',
+            order: '1',
+        });
+
+        menus.registerMenuAction(['menubar', '5_kb-view', '3_mode'], {
+            commandId: KBViewCommands.SWITCH_TO_DEVELOPER.id,
+            label: 'Developer Mode',
+            order: '2',
+        });
+
+        menus.registerMenuAction(['menubar', '5_kb-view', '3_mode'], {
+            commandId: KBViewCommands.TOGGLE_MODE.id,
+            label: 'Toggle Mode',
+            order: '0',
+        });
     }
 }
