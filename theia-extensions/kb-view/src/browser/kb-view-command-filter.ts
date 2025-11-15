@@ -15,7 +15,7 @@
  ********************************************************************************/
 
 import { injectable, inject } from '@theia/core/shared/inversify';
-import { CommandContribution, CommandRegistry, Command } from '@theia/core/lib/common/command';
+import { CommandContribution, CommandRegistry } from '@theia/core/lib/common/command';
 import { ViewModeService } from './view-mode-service';
 
 /**
@@ -112,67 +112,10 @@ export class KBViewCommandFilter implements CommandContribution {
     ]);
 
     registerCommands(registry: CommandRegistry): void {
-        // Wrap command registration to add mode-aware enablement
-        const originalRegisterCommand = registry.registerCommand.bind(registry);
-
-        /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-        registry.registerCommand = (command: Command, handler?: any) => {
-            const wrappedHandler = this.wrapCommandHandler(command, handler);
-            return originalRegisterCommand(command, wrappedHandler);
-        };
-    }
-
-    /**
-     * Wraps a command handler with mode-aware enablement logic.
-     */
-    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-    private wrapCommandHandler(command: Command, handler?: any): any {
-        if (!handler) {
-            return handler;
-        }
-
-        const commandId = command.id;
-
-        // Developer commands: only enabled in Developer mode
-        if (this.developerCommands.has(commandId)) {
-            return {
-                execute: handler.execute?.bind(handler),
-                /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-                isEnabled: (...args: any[]) => {
-                    const isDeveloperMode = this.viewModeService.currentMode === 'developer';
-                    const originalEnabled = handler.isEnabled?.(...args) ?? true;
-                    return isDeveloperMode && originalEnabled;
-                },
-                /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-                isVisible: (...args: any[]) => {
-                    const isDeveloperMode = this.viewModeService.currentMode === 'developer';
-                    const originalVisible = handler.isVisible?.(...args) ?? true;
-                    return isDeveloperMode && originalVisible;
-                },
-            };
-        }
-
-        // KB View commands: only visible in KB View mode
-        if (this.kbViewCommands.has(commandId)) {
-            return {
-                execute: handler.execute?.bind(handler),
-                /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-                isEnabled: (...args: any[]) => {
-                    const isKBViewMode = this.viewModeService.currentMode === 'kb-view';
-                    const originalEnabled = handler.isEnabled?.(...args) ?? true;
-                    return isKBViewMode && originalEnabled;
-                },
-                /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-                isVisible: (...args: any[]) => {
-                    const isKBViewMode = this.viewModeService.currentMode === 'kb-view';
-                    const originalVisible = handler.isVisible?.(...args) ?? true;
-                    return isKBViewMode && originalVisible;
-                },
-            };
-        }
-
-        // All other commands: no filtering
-        return handler;
+        // Command filtering is handled via CSS (see menu-filter.css)
+        // This avoids async initialization issues with command registry wrapping.
+        // Commands are visually hidden in menus and command palette based on mode.
+        // No-op: CSS-based filtering is more performant and avoids DI issues
     }
 
     /**
