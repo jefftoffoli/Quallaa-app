@@ -9,26 +9,23 @@
  * **************************************************************************** */
 
 /*
- * KB View Mode CSS
+ * KB View Mode CSS - Main Entry Point
  *
+ * Imports all KB View styling components.
  * These classes are applied to the body element based on current mode.
- * Phase 6 will add extensive styling here.
  */
 
-/* Import Activity Bar filtering (Phase 5) */
+/* Phase 6: CSS Variables & Color Palette */
+@import './variables.css';
+
+/* Phase 5: Activity Bar Filtering */
 @import './activity-bar.css';
 
-body.kb-view-mode {
-    /* Placeholder for KB View specific styles */
-    /* Will be expanded in Phase 6: CSS Styling */
-}
+/* Phase 6: Layout & Component Styling */
+@import './layout.css';
 
-body.developer-mode {
-    /* Placeholder for Developer mode specific styles */
-    /* Most default Theia styles apply here */
-}
+/* Phase 6: Monaco Editor Customization */
+@import './editor.css';
 
-/* Mode transition smoothing */
-body {
-    transition: background-color 0.2s ease;
-}
+/* Phase 6: Transitions & Animations */
+@import './transitions.css';
