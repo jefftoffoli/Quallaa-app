@@ -44,13 +44,27 @@ export class ViewModeServiceImpl implements ViewModeService {
     protected readonly stateManager: ModeStateManager;
 
     private _currentMode: ViewMode = 'developer';
+    private _initialized = false;
 
     private readonly onDidChangeModeEmitter = new Emitter<ViewMode>();
     readonly onDidChangeMode: Event<ViewMode> = this.onDidChangeModeEmitter.event;
 
     private readonly KB_VIEW_CONTEXT_KEY = 'kbViewMode';
 
-    async initialize(): Promise<void> {
+    /**
+     * Auto-initialize on first access if not already initialized
+     */
+    private ensureInitialized(): void {
+        if (!this._initialized) {
+            this._initialized = true;
+            this.initializeSync();
+        }
+    }
+
+    /**
+     * Synchronous initialization to avoid async DI issues
+     */
+    private initializeSync(): void {
         // Read initial mode from preferences
         const savedMode = this.preferences.get<ViewMode>('kbView.mode', 'developer');
         this._currentMode = savedMode;
@@ -72,11 +86,21 @@ export class ViewModeServiceImpl implements ViewModeService {
         });
     }
 
+    /**
+     * Legacy async initialize method - now just ensures initialization happened
+     * @deprecated Use is automatic now via ensureInitialized()
+     */
+    async initialize(): Promise<void> {
+        this.ensureInitialized();
+    }
+
     get currentMode(): ViewMode {
+        this.ensureInitialized();
         return this._currentMode;
     }
 
     async switchMode(mode: ViewMode): Promise<void> {
+        this.ensureInitialized();
         if (this._currentMode === mode) {
             return; // Already in this mode
         }
@@ -118,6 +142,7 @@ export class ViewModeServiceImpl implements ViewModeService {
     }
 
     async toggleMode(): Promise<void> {
+        this.ensureInitialized();
         const newMode: ViewMode = this._currentMode === 'kb-view' ? 'developer' : 'kb-view';
         await this.switchMode(newMode);
     }

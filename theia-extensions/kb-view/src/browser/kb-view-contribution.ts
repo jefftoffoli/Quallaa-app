@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0
  ********************************************************************************/
 
-import { injectable, inject, postConstruct } from '@theia/core/shared/inversify';
+import { injectable, inject } from '@theia/core/shared/inversify';
 import { Command, CommandContribution, CommandRegistry } from '@theia/core/lib/common/command';
 import { MenuContribution, MenuModelRegistry } from '@theia/core/lib/common/menu';
 import { CommonMenus } from '@theia/core/lib/browser/common-frontend-contribution';
@@ -52,13 +52,6 @@ export class KBViewContribution implements CommandContribution, MenuContribution
 
     @inject(KBViewWidgetManager)
     protected readonly widgetManager: KBViewWidgetManager;
-
-    @postConstruct()
-    protected async init(): Promise<void> {
-        // Initialize the service when the contribution is created
-        await this.viewModeService.initialize();
-        // Widget manager initializes itself via @postConstruct
-    }
 
     registerCommands(commands: CommandRegistry): void {
         commands.registerCommand(KBViewCommands.TOGGLE_MODE, {
