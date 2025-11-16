@@ -22,7 +22,7 @@ export const KB_VIEW_PREFERENCES_SCHEMA: PreferenceSchema = {
         'kbView.mode': {
             type: 'string',
             enum: ['kb-view', 'developer'],
-            default: 'developer',
+            default: 'kb-view',
             description: 'Current view mode: KB View (knowledge management) or Developer (full IDE)',
         },
 
