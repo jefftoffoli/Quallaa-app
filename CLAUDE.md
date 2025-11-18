@@ -29,7 +29,9 @@
 - Based on Theia v1.66.1
 - Version: 1.66.100
 - License: EPL-2.0
-- 87.5% feature parity with Foam (Obsidian-like VS Code extension)
+- Priority 1 complete (KB View default mode)
+- See `knowledge-base/CURRENT_STATUS.md` for detailed status
+- See `knowledge-base/FEATURES.md` for complete feature list
 
 ---
 
@@ -49,589 +51,351 @@ This is fundamentally different from a typical Theia extension.
 
 ## Repository Structure
 
-```
-Quallaa-app/
-├── applications/
-│   ├── browser/          # Browser-based app (runs in web browser)
-│   └── electron/         # Desktop app (macOS, Windows, Linux)
-│
-├── theia-extensions/     # Custom Theia extensions
-│   ├── knowledge-base/   # 🔥 THE BIG ONE - All knowledge management features
-│   ├── product/          # Branding, about dialog, getting started widget
-│   ├── launcher/         # CLI launcher for AppImage builds
-│   └── updater/          # Auto-update mechanism
-│
-├── docs/                 # Documentation
-│   └── MERGING_UPSTREAM.md  # How to merge Theia updates
-│
-├── test-workspace/       # Sample workspace for testing features
-│   └── .claude/          # Claude Code hooks for this workspace
-│
-├── logo/                 # Brand assets (SVG, PNG)
-├── .github/
-│   └── scripts/
-│       └── merge-upstream.sh  # Automated merge script
-│
-├── .husky/               # Git hooks (pre-commit linting)
-├── playwright.config.ts  # E2E test configuration
-└── package.json          # Root package (Yarn workspace)
-```
+**Key Directories:**
+
+- `applications/` - Browser and Electron apps
+- `theia-extensions/` - Custom extensions (knowledge-base, product, kb-view,
+  launcher, updater)
+- `knowledge-base/` - Documentation (excluded from git - private planning docs)
+- `docs/` - Technical documentation
+- `test-workspace/` - Sample workspace for testing
+- `.github/scripts/` - Automation scripts (merge-upstream.sh)
+
+**Main Extensions:**
+
+- `knowledge-base/` - Wiki links, backlinks, graph, tags, templates, daily notes
+- `kb-view/` - Mode system, state management, widget management
+- `product/` - Branding, Getting Started widget
+
+_(See actual directory structure in source)_
 
 ---
 
-## The Knowledge Base Extension
+## Core Extensions
 
-**Location:** `theia-extensions/knowledge-base/`
+### Knowledge Base Extension (`theia-extensions/knowledge-base/`)
 
-This is the **crown jewel** of Quallaa - 28 files, ~3,500 lines of code.
+The **crown jewel** of Quallaa - comprehensive knowledge management features.
 
-### Features Implemented (87.5% Foam Parity)
+**Implemented Features:**
 
-**Wiki Links** (`src/browser/wiki-links/`)
+- Wiki Links: `[[Note Name]]` syntax with autocomplete
+- Backlinks Panel: Shows incoming links
+- Knowledge Graph: D3.js force-directed visualization
+- Tags Browser: Hierarchical tags with counts
+- Daily Notes: Date-based note creation
+- Templates: 5 built-in, 13 variables
 
-- Double-bracket syntax: `[[Note Name]]` and `[[Note Name|Alias]]`
-- Document link provider for navigation
-- Autocomplete provider
-- Visual styling
+**Backend Architecture:**
 
-**Backlinks Panel** (`src/browser/backlinks/`)
+- Indexing service (827 lines) - Indexes markdown files, builds link graph
+- File watching with chokidar for real-time updates
+- In-memory graph for instant autocomplete
 
-- Shows all notes linking to current note
-- Automatic bidirectional link detection
-- Click to navigate to source
+**See:** `knowledge-base/FEATURES.md` for complete feature list and
+implementation status
 
-**Knowledge Graph** (`src/browser/graph/`)
+### KB View Extension (`theia-extensions/kb-view/`)
 
-- Interactive D3.js force-directed graph
-- Zoom, pan, drag nodes
-- Visual indicators for active vs. unresolved links
-- Node sizing by connection count (degree centrality)
-- Click to open notes
+Mode system for knowledge-first vs developer experience.
 
-**Tags Browser** (`src/browser/tags/`)
+**Core Services:**
 
-- Hierarchical tag display (e.g., `#project/backend/api`)
-- Real-time filtering
-- Badge counts per tag
+- `ViewModeService` - Mode switching with lazy initialization
+- `ModeStateManager` - State capture/restore per mode
+- `KBViewWidgetManager` - Widget visibility management
+- `KBViewPreferences` - 17 configuration options
 
-**Daily Notes** (`src/browser/daily-notes/`)
+**What KB View Mode Does:**
 
-- Date-based note creation
-- Template support
+- Hides developer UI (Terminal, Debug, SCM icons)
+- Shows Tags (left) + Backlinks (right) by default
+- Applies warm color palette, Georgia font
+- Hides .md extensions
 
-**Note Templates** (`src/browser/templates/`)
-
-- 5 built-in templates (Meeting Notes, Project Note, etc.)
-- 13 template variables (date, time, title, etc.)
-- Interactive creation workflow
-
-### Backend Architecture
-
-**Indexing Service** (`src/node/knowledge-base-service-impl.ts` - 827 lines)
-
-- Indexes all markdown files in workspace
-- Parses wiki links and frontmatter
-- Builds bidirectional link graph
-- Watches for file changes with chokidar
-- Provides query API for frontend
-
-**Why Backend Service?**
-
-- Efficient file watching for large repos (1000s of notes)
-- Instant autocomplete without scanning files every time
-- In-memory graph for fast queries
-
-### Key Dependencies
-
-- `d3@6.7.0` - Knowledge graph visualization
-- `gray-matter@^4.0.3` - YAML frontmatter parsing
-- `chokidar@^4.0.3` - File watching
+**See:** `knowledge-base/Architecture/KB-Widget-System.md` for architecture
+details
 
 ---
 
 ## Development Workflows
 
-### Building
+**Building:**
 
-```bash
-# Development build (faster, less optimized)
-yarn && yarn build:dev && yarn download:plugins
+- Development: `yarn && yarn build:dev && yarn download:plugins`
+- Production: `yarn && yarn build && yarn download:plugins`
+- Extensions only: `yarn build:extensions`
+- Applications only: `yarn build:applications:dev`
 
-# Production build
-yarn && yarn build && yarn download:plugins
+**Running:**
 
-# Build just extensions
-yarn build:extensions
+- Browser: `yarn browser start` (http://localhost:3000)
+- Electron: `yarn electron package:preview`
+- Package: `yarn package:applications` (output in `applications/electron/dist`)
 
-# Build just applications
-yarn build:applications:dev
-```
+**Testing:**
 
-### Running
+- Unit: `cd theia-extensions/knowledge-base && yarn test`
+- E2E: `yarn test` (Playwright)
+- Specific: `npx playwright test <test-file>`
 
-```bash
-# Browser version
-yarn browser start
-# Visit http://localhost:3000/
+**Linting:**
 
-# Electron preview
-yarn electron package:preview
+- Check: `yarn lint`
+- Fix: `yarn lint:fix`
+- Markdown: `yarn lint:markdown`
+- Format: `yarn format`
 
-# Package installers
-yarn package:applications
-# Output in applications/electron/dist
-```
-
-### Testing
-
-```bash
-# Unit tests (knowledge base)
-cd theia-extensions/knowledge-base
-yarn test
-
-# E2E tests (Playwright)
-yarn test
-
-# Specific E2E test
-npx playwright test applications/browser/test/knowledge-graph.spec.ts
-```
-
-### Linting & Formatting
-
-```bash
-# Lint everything
-yarn lint
-
-# Auto-fix linting issues
-yarn lint:fix
-
-# Markdown linting
-yarn lint:markdown
-
-# Format with Prettier
-yarn format
-
-# Check formatting
-yarn format:check
-```
+_(See package.json scripts for complete command list)_
 
 ---
 
 ## Merging Upstream Theia Updates
 
-**IMPORTANT:** Use the automated merge script!
-
-```bash
-.github/scripts/merge-upstream.sh
-```
+**Script:** `.github/scripts/merge-upstream.sh` (use this, not manual merge)
 
 **What it does:**
 
-1. Fetches upstream changes
-2. Auto-resolves Quallaa-specific files (README, branding)
-3. Regenerates yarn.lock
-4. Shows remaining conflicts (usually package.json files)
+- Fetches upstream changes
+- Auto-resolves Quallaa-specific files (README, branding)
+- Regenerates yarn.lock
+- Shows remaining conflicts (usually package.json)
 
-**Manual Steps:**
+**Merge Strategy:**
 
-- Resolve package.json conflicts:
-    - **Keep:** name, author, license, URLs (Quallaa metadata)
-    - **Accept:** version, @theia/\* dependency updates
-    - **Keep:** quallaa-\*-ext dependencies
+- **Keep:** Quallaa metadata (name, author, license, URLs, quallaa-\* deps)
+- **Accept:** Theia version updates, @theia/\* dependency versions
 
-**Full guide:** See `docs/MERGING_UPSTREAM.md`
-
-**Last merge:** Commit `5e06860` - Theia 1.65.1 → 1.66.1
+**Full guide:** `docs/MERGING_UPSTREAM.md`
 
 ---
 
-## Key Files to Know
+## Key File Patterns
 
-### Branding & Product Identity
+**Branding (Always keep ours during merges):**
 
-- `theia-extensions/product/src/browser/branding-util.tsx` - Help text, welcome
-  content
-- `theia-extensions/product/src/browser/theia-ide-about-dialog.tsx` - About
-  dialog
-- `theia-extensions/product/src/browser/theia-ide-getting-started-widget.tsx` -
-  Getting started
-- `README.md` - Main project README (completely rewritten for Quallaa)
+- `theia-extensions/product/src/browser/*.tsx` - All UI branding
+- `README.md` - Quallaa-specific
+- `CONTRIBUTING.md`, `LICENSE` - Quallaa-specific
 
-**Strategy:** Always keep ours during merges
+**Config (Keep metadata, accept dependency updates):**
 
-### Application Configs
+- `applications/*/package.json` - App configs
+- `package.json` - Root workspace
+- `electron-builder.yml` - Build config
 
-- `applications/browser/package.json` - Browser app dependencies & config
-- `applications/electron/package.json` - Electron app dependencies & config
-- `applications/electron/electron-builder.yml` - Electron build config
+**Quallaa-Specific:**
 
-**Strategy:** Keep metadata, accept dependency updates
-
-### Root Config
-
-- `package.json` - Root workspace config
-- `.eslintrc.js` - Added React & accessibility rules
+- `.eslintrc.js` - React & accessibility rules
 - `.gitignore` - Excludes `knowledge-base/` private docs
-- `playwright.config.ts` - E2E test config
+- `playwright.config.ts` - E2E config
 
 ---
 
 ## Common Tasks
 
-### Add a New Feature to Knowledge Base Extension
+**Add Feature to Knowledge Base Extension:**
 
-1. Decide if it's frontend or backend
-2. Create files in appropriate directory:
-    - Frontend: `src/browser/<feature>/`
-    - Backend: `src/node/`
-    - Shared: `src/common/`
-3. Register in module:
-    - Frontend: `src/browser/knowledge-base-frontend-module.ts`
-    - Backend: `src/node/knowledge-base-backend-module.ts`
-4. Add CSS if needed: `src/browser/style/<feature>.css`
-5. Write tests: `src/**/*.spec.ts`
-6. Build: `yarn build:extensions`
+- Frontend: `src/browser/<feature>/` → Register in
+  `knowledge-base-frontend-module.ts`
+- Backend: `src/node/` → Register in `knowledge-base-backend-module.ts`
+- CSS: `src/browser/style/<feature>.css`
+- Tests: `src/**/*.spec.ts`
+- Build: `yarn build:extensions`
 
-### Debug the Application
+**Debug:**
 
-**Browser:**
+- Browser: `yarn browser start` (use DevTools)
+- Electron: `yarn electron start:debug` (DevTools auto-open)
 
-```bash
-yarn browser start
-# Open browser DevTools
-```
+**Add New Extension:**
 
-**Electron:**
+- Create `theia-extensions/<name>/` with `package.json` (name:
+  `quallaa-<name>-ext`, license: EPL-2.0)
+- Add to application dependencies
+- Run `yarn install`
 
-```bash
-yarn electron start:debug
-# Electron DevTools open automatically
-```
+**Update Branding:**
 
-### Add a New Theia Extension
-
-1. Create directory: `theia-extensions/<name>/`
-2. Add `package.json` with:
-    - `name: "quallaa-<name>-ext"`
-    - `license: "EPL-2.0"`
-    - `theiaExtensions` pointing to module
-3. Add to application dependencies
-4. Run `yarn install`
-
-### Update Icons/Logos
-
-**Application Icons:**
-
-- `applications/electron/resources/icon.icns` (macOS)
-- `applications/electron/resources/icon.ico` (Windows)
-- `applications/electron/resources/icons/` (various sizes)
-
-**In-App Logos:**
-
-- `theia-extensions/product/src/browser/icons/`
-- Theme-aware: `quallaa-logo-light.png`, `quallaa-logo-dark.png`
-
-**Splash Screen:**
-
-- `applications/electron/resources/QuallaaIDESplash.svg`
+- App icons: `applications/electron/resources/` (.icns, .ico, icons/)
+- In-app logos: `theia-extensions/product/src/browser/icons/` (theme-aware)
+- Splash: `applications/electron/resources/QuallaaIDESplash.svg`
 
 ---
 
 ## Important Conventions
 
-### Naming
+**Naming:**
 
-- **Packages:** `quallaa-<name>-ext` or `quallaa-<name>-app`
-- **NOT:** `theia-ide-*` (that's upstream)
-
-### Metadata
-
-Always use Quallaa metadata in all `package.json` files:
-
-```json
-{
-    "license": "EPL-2.0",
-    "author": "Jeff Toffoli",
-    "homepage": "https://github.com/jefftoffoli/Quallaa-app#readme",
-    "bugs": { "url": "https://github.com/jefftoffoli/Quallaa-app/issues" },
-    "repository": {
-        "url": "git+https://github.com/jefftoffoli/Quallaa-app.git"
-    }
-}
-```
-
-### Configuration
-
+- Packages: `quallaa-<name>-ext` or `quallaa-<name>-app` (NOT `theia-ide-*`)
 - App name: `"Quallaa"` (not "Theia IDE")
 - Config folder: `.quallaa` (not `.theia`)
 
----
+**Metadata (all package.json files):**
 
-## File Patterns to Avoid Editing
+- License: EPL-2.0
+- Author: Jeff Toffoli
+- URLs: github.com/jefftoffoli/Quallaa-app
 
-These will conflict on every merge - **keep ours:**
+**Merge Conflict Patterns:**
 
-- `README.md`
-- `CONTRIBUTING.md`
-- `LICENSE` (copyright line)
-- `theia-extensions/product/src/browser/*.tsx`
-
-These change frequently - **accept theirs:**
-
-- `yarn.lock` (regenerate with `yarn install`)
-- Version numbers in `package.json`
-- `@theia/*` dependency versions
+- **Keep ours:** README, CONTRIBUTING, LICENSE, branding files
+- **Accept theirs:** yarn.lock, version numbers, @theia/\* dependencies
 
 ---
 
 ## Git Workflow
 
-### Branches
+**Branches:**
 
-- `master` - main development branch
-- Upstream tracking: `upstream/master` →
-  `https://github.com/eclipse-theia/theia-ide.git`
+- `master` - main development
+- Upstream: `upstream/master` → eclipse-theia/theia-ide.git
 
-### Hooks
+**Pre-commit Hooks (.husky):**
 
-**Pre-commit** (`.husky/pre-commit`):
+- Runs lint-staged, Prettier, ESLint, markdownlint
 
-- Runs lint-staged
-- Formats code with Prettier
-- Lints modified files with ESLint
-- Checks markdown with markdownlint
+**Commit Messages:**
 
-### Commit Messages
-
-Use conventional commits when possible:
-
-- `feat:` - New feature
-- `fix:` - Bug fix
-- `docs:` - Documentation
-- `chore:` - Maintenance
-- `refactor:` - Code refactoring
-
-**Include Claude attribution when AI-assisted:**
-
-```
-feat: add new feature
-
-Description of changes
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>
-```
+- Use conventional commits: `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`
+- Include Claude attribution for AI-assisted work
+- _(See actual commit examples in git log)_
 
 ---
 
-## Testing Strategy
+## Testing
 
-### Unit Tests
+**Unit Tests:**
 
 - Location: `theia-extensions/knowledge-base/src/**/*.spec.ts`
-- Run with: `yarn test` in extension directory
+- Run: `yarn test` (in extension dir)
 - Framework: Mocha + Chai
 - Focus: Wiki link parser, knowledge base service
 
-### E2E Tests
+**E2E Tests:**
 
 - Location: `applications/browser/test/*.spec.ts`
-- Run with: `yarn test` in root
+- Run: `yarn test` (in root)
 - Framework: Playwright
-- Focus: UI interactions, knowledge graph, wiki link creation
+- Focus: UI interactions, mode switching, widgets
 
-### Test Workspace
-
-- Location: `test-workspace/`
-- Sample markdown files with wiki links
-- Used for manual testing and E2E tests
+**Test Workspace:** `test-workspace/` (sample markdown files for testing)
 
 ---
 
-## Dependencies to Be Aware Of
+## Key Dependencies
 
-### Quallaa-Specific
+**Quallaa-Specific:**
 
-- `@playwright/test` - E2E testing
-- `prettier` - Code formatting
-- `husky` - Git hooks
-- `lint-staged` - Pre-commit linting
-- `markdownlint-cli` - Markdown linting
-- `eslint-plugin-jsx-a11y` - Accessibility linting
-- `eslint-plugin-react` - React linting
-- `d3` - Knowledge graph
-- `gray-matter` - Frontmatter parsing
+- Testing: `@playwright/test`
+- Linting: `prettier`, `husky`, `lint-staged`, `markdownlint-cli`,
+  `eslint-plugin-jsx-a11y`, `eslint-plugin-react`
+- Knowledge Base: `d3@6.7.0` (pinned), `gray-matter`, `chokidar`
 
-### Pinned Versions (in resolutions)
-
-```json
-"resolutions": {
-  "**/d3": "6.7.0",
-  "**/@types/d3": "6.7.0"
-}
-```
-
-These are pinned to ensure knowledge graph compatibility.
+**Pinned Versions:** d3@6.7.0 (knowledge graph compatibility) _(See package.json
+resolutions for complete list)_
 
 ---
 
-## Known Issues & Gotchas
+## Known Issues
 
-### The `knowledge-base/` Directory
+**knowledge-base/ Directory:**
 
-**In .gitignore:**
+- In .gitignore (private docs, different from extension)
+- Staging extension files requires:
+  `git add -f theia-extensions/knowledge-base/package.json`
 
-```gitignore
-# Private planning and strategy docs
-knowledge-base/
-```
+**Unit Tests:**
 
-This excludes a private documentation directory (different from the extension).
+- Some backend tests fail (expect real filesystem)
+- E2E tests validate actual functionality
 
-**Gotcha:** When staging `theia-extensions/knowledge-base/package.json`, you
-need `-f`:
+**Yarn Warnings:**
 
-```bash
-git add -f theia-extensions/knowledge-base/package.json
-```
-
-### Unit Test Failures
-
-Some backend unit tests fail because they expect a real filesystem:
-
-- 31 passing (wiki link parser)
-- 16 failing (backend service - needs real workspace)
-
-This is expected. The E2E tests validate actual functionality.
-
-### Yarn Warnings
-
-You'll see warnings about:
-
-- Peer dependencies (React, TypeScript, etc.)
-- Resolution field incompatibilities
-
-These are safe to ignore - they're due to Theia's complex dependency tree.
+- Peer dependency warnings (safe to ignore)
+- Due to Theia's complex dependency tree
 
 ---
 
-## Architecture Decisions
+## Architecture
 
-### Why D3.js for Knowledge Graph?
+**Key Patterns:**
 
-- Mature, battle-tested force-directed graph library
-- Works in both browser and Electron
-- Rich interaction capabilities (zoom, pan, drag)
-- Pinned to v6.7.0 for stability
+- **Backend Indexing:** Scales to thousands of notes, instant autocomplete
+- **Mode System:** KB View vs Developer with state capture/restore
+- **Lazy Initialization:** Avoids async DI issues (ViewModeService pattern)
+- **Dual Sidebars:** Left + right simultaneously (Theia native)
 
-### Why Backend Indexing Service?
+**Technology Choices:**
 
-- Scales to thousands of notes
-- Instant autocomplete without file scanning
-- File watching for real-time updates
-- Separation of concerns (backend = data, frontend = UI)
+- **D3.js:** Knowledge graph (pinned v6.7.0 for stability)
+- **chokidar:** File watching (cross-platform, efficient)
+- **React:** UI components (Theia standard, good TypeScript/a11y support)
 
-### Why chokidar for File Watching?
-
-- More reliable than Node's fs.watch
-- Works across platforms (macOS, Windows, Linux)
-- Handles large directories efficiently
-
-### Why React for UI Components?
-
-- Theia already uses React
-- Rich component ecosystem
-- Good TypeScript support
-- Accessibility tooling (jsx-a11y)
+**See:** `knowledge-base/Architecture/` for detailed architectural decisions
 
 ---
 
-## Future Plans
+## Next Priorities
 
-**Phase 2 Features:**
+**Priority 2:** Named Workspace Layouts (beyond KB View/Developer) **Priority
+3:** WYSIWYG markdown editor (live preview mode)
 
-- WYSIWYG markdown editor
-- Orphans detection widget
-- Smart note suggestions
-- Graph filtering and search
-- Export to various formats
-
-**See:** `PHASE_1_3_STATUS.md` for detailed roadmap
+**See:** `knowledge-base/CURRENT_STATUS.md` for detailed next steps and roadmap
 
 ---
 
-## Quick Reference Commands
+## Quick Commands
 
-```bash
-# Fresh start
-yarn clean && yarn install && yarn build:dev
-
-# Test knowledge base
-cd theia-extensions/knowledge-base && yarn test
-
-# Merge upstream
-.github/scripts/merge-upstream.sh
-
-# Package for distribution
-yarn package:applications
-
-# Check dependencies
-yarn list --pattern "quallaa-*"
-
-# Find outdated packages
-yarn outdated
-
-# Clean everything (nuclear option)
-yarn clean && rm -rf node_modules && yarn install
-```
+- Fresh start: `yarn clean && yarn install && yarn build:dev`
+- Test extension: `cd theia-extensions/knowledge-base && yarn test`
+- Merge upstream: `.github/scripts/merge-upstream.sh`
+- Package: `yarn package:applications`
+- Check deps: `yarn list --pattern "quallaa-*"`
+- Outdated: `yarn outdated`
+- Nuclear: `yarn clean && rm -rf node_modules && yarn install`
 
 ---
 
-## Getting Help
+## Resources
 
 **Documentation:**
 
-- [Theia Documentation](https://theia-ide.org/docs/)
-- [Theia API Docs](https://eclipse-theia.github.io/theia/docs/next/)
-- [docs/MERGING_UPSTREAM.md](docs/MERGING_UPSTREAM.md) - Merge guide
+- Theia docs: theia-ide.org/docs
+- Merge guide: `docs/MERGING_UPSTREAM.md`
+- Knowledge base: `knowledge-base/` directory
 
-**Community:**
-
-- Theia Discussions: https://github.com/eclipse-theia/theia/discussions
-- Theia Spectrum Chat: https://spectrum.chat/theia
-
-**Quallaa Repo:**
-
-- Issues: https://github.com/jefftoffoli/Quallaa-app/issues
-- Wiki: (TBD)
+**Issues:** github.com/jefftoffoli/Quallaa-app/issues
 
 ---
 
 ## For AI Assistants
 
-**When working on this project:**
+**Essential Rules:**
 
-1. **Always preserve Quallaa branding** - Never suggest changing back to "Theia
-   IDE"
+1. **Always preserve Quallaa branding** - Never suggest reverting to "Theia IDE"
 2. **Keep EPL-2.0 license** - All code must be EPL-2.0
-3. **Follow existing patterns** - Knowledge base extension shows the
-   architectural style
-4. **Test after changes** - Run `yarn build:extensions` to verify
-5. **Update this file** - If you make significant changes, update CLAUDE.md
-6. **Check merge docs** - Before merging upstream, read
-   `docs/MERGING_UPSTREAM.md`
-7. **Respect .gitignore** - Don't commit `knowledge-base/` directory (private
+3. **Follow existing patterns** - See knowledge-base extension for architectural
+   style
+4. **Test after changes** - Run `yarn build:extensions`
+5. **Update this file** - Keep CLAUDE.md current with significant changes
+6. **Respect .gitignore** - Don't commit `knowledge-base/` directory (private
    docs)
+7. **Use knowledge-base/** - Check `knowledge-base/CURRENT_STATUS.md` and
+   `knowledge-base/FEATURES.md` for current state
 
-**Common requests:**
+**Common Requests:**
 
-- "Add feature to knowledge base" → See "Add a New Feature" section
-- "Merge upstream" → Use `.github/scripts/merge-upstream.sh`
-- "Fix build" → Try `yarn clean && yarn build:dev`
-- "Update branding" → Edit files in `theia-extensions/product/src/browser/`
+- Add feature → See "Common Tasks" section above
+- Merge upstream → `.github/scripts/merge-upstream.sh` (see
+  `docs/MERGING_UPSTREAM.md`)
+- Fix build → `yarn clean && yarn build:dev`
+- Update branding → `theia-extensions/product/src/browser/`
+- Current status → `knowledge-base/CURRENT_STATUS.md`
+- Feature list → `knowledge-base/FEATURES.md`
+- Architecture → `knowledge-base/Architecture/`
 
 ---
 
-**Last Updated:** 2025-11-08 (after Theia 1.66.1 merge) **Quallaa Version:**
-1.66.100 **Based on Theia:** 1.66.1
+**Last Updated:** 2025-11-16 (Priority 1 complete) **Quallaa Version:** 1.66.100
+**Based on Theia:** 1.66.1
