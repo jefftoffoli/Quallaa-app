@@ -86,27 +86,42 @@ test.describe('Layout Management - Systematic Testing', () => {
     test('Journey 2: Layout commands appear in Command Palette', async ({ page }) => {
         await openCommandPalette(page);
 
-        // Search for layout commands
-        await page.fill('.monaco-inputbox input', 'layout');
+        // Search for layout commands using keyboard.type (more reliable)
+        await page.keyboard.type('Switch Workspace Layout');
         await page.waitForTimeout(1000);
 
         // Get all visible command items
-        const commandItems = await page.$$eval('.monaco-list-row[aria-label]', rows =>
-            rows
-                .filter(row => {
-                    const style = window.getComputedStyle(row);
-                    return style.display !== 'none';
-                })
-                .map(row => row.getAttribute('aria-label') || row.textContent?.trim() || '')
-        );
+        const commandList = page.locator('.monaco-list-row');
+        const count = await commandList.count();
+
+        const commandItems: string[] = [];
+        for (let i = 0; i < count; i++) {
+            const text = await commandList.nth(i).textContent();
+            if (text) commandItems.push(text.trim());
+        }
 
         console.log('Commands found:', commandItems);
 
-        // Check for our layout commands
-        const hasSwitch = commandItems.some(item => item.includes('Switch Workspace Layout') || item.includes('kb-view.switchLayout'));
-        const hasSave = commandItems.some(item => item.includes('Save Current Layout') || item.includes('kb-view.saveLayout'));
-
+        // Check for Switch Layout command
+        const hasSwitch = commandItems.some(item => item.includes('Switch Workspace Layout'));
         console.log('Has Switch Layout command:', hasSwitch);
+
+        // Now search for Save Layout
+        await page.keyboard.press('Escape');
+        await page.waitForTimeout(500);
+        await openCommandPalette(page);
+        await page.keyboard.type('Save Current Layout');
+        await page.waitForTimeout(1000);
+
+        const saveList = page.locator('.monaco-list-row');
+        const saveCount = await saveList.count();
+        const saveItems: string[] = [];
+        for (let i = 0; i < saveCount; i++) {
+            const text = await saveList.nth(i).textContent();
+            if (text) saveItems.push(text.trim());
+        }
+
+        const hasSave = saveItems.some(item => item.includes('Save Current Layout'));
         console.log('Has Save Layout command:', hasSave);
 
         expect(hasSwitch, 'Switch Workspace Layout command should be registered').toBe(true);

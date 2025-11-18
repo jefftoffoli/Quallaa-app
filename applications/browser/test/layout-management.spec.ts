@@ -10,26 +10,18 @@ const APP_URL = 'http://localhost:3000';
  * Helper: Wait for app to be fully loaded
  */
 async function waitForAppReady(page: Page) {
-    await page.waitForSelector('.theia-preload', { state: 'hidden', timeout: 30000 });
-    await page.waitForSelector('#theia-app-shell', { timeout: 30000 });
+    await page.waitForSelector('.theia-ApplicationShell', { timeout: 30000 });
     await page.waitForTimeout(2000); // Allow for mode initialization
 }
 
 /**
- * Helper: Open command palette and run a command
+ * Helper: Open command palette
  */
-async function runCommand(page: Page, commandName: string): Promise<boolean> {
-    // Open command palette
+async function openCommandPalette(page: Page) {
     await page.keyboard.press('F1');
-    await page.waitForSelector('.monaco-quick-input-box input', { timeout: 5000 });
-
-    // Type command name
-    await page.fill('.monaco-quick-input-box input', commandName);
     await page.waitForTimeout(500);
-
-    // Check if command appears
-    const items = await page.$$('.monaco-list-row');
-    return items.length > 0;
+    // The quick input widget uses this class
+    await page.waitForSelector('.quick-input-widget', { timeout: 5000 });
 }
 
 test.describe('Layout Management', () => {
@@ -40,30 +32,47 @@ test.describe('Layout Management', () => {
 
     test('should register layout management commands', async ({ page }) => {
         // Open command palette
-        await page.keyboard.press('F1');
-        await page.waitForSelector('.monaco-quick-input-box input');
+        await openCommandPalette(page);
 
-        // Check if "Switch Workspace Layout" command exists
-        await page.fill('.monaco-quick-input-box input', 'Switch Workspace Layout');
-        await page.waitForTimeout(500);
+        // Search for "Switch Workspace Layout" command
+        await page.keyboard.type('Switch Workspace Layout');
+        await page.waitForTimeout(1000);
 
         // Get the quick pick items
-        const items = await page.$$('.monaco-list-row');
-        console.log(`Found ${items.length} items for "Switch Workspace Layout"`);
+        const commandList = page.locator('.monaco-list-row');
+        const count = await commandList.count();
+        console.log(`Found ${count} items for "Switch Workspace Layout"`);
+
+        // Log found commands
+        for (let i = 0; i < Math.min(count, 5); i++) {
+            const text = await commandList.nth(i).textContent();
+            console.log(`Command ${i}:`, text?.trim());
+        }
 
         // Check if the command appears
-        const commandExists = items.length > 0;
+        const commandExists = count > 0;
 
         if (!commandExists) {
-            console.log('Command not found. Checking kb-view commands...');
+            console.log('Command not found. Checking all kb-view commands...');
 
-            // Clear search and list kb-view commands
-            await page.fill('.monaco-quick-input-box input', 'kb-view');
+            // Close and reopen
+            await page.keyboard.press('Escape');
             await page.waitForTimeout(500);
+            await openCommandPalette(page);
+
+            // Search for kb-view commands
+            await page.keyboard.type('kb-view');
+            await page.waitForTimeout(1000);
 
             // Get all kb-view commands
-            const kbViewCommands = await page.$$eval('.monaco-list-row', rows => rows.slice(0, 20).map(row => row.textContent?.trim()));
-            console.log('KB View commands:', kbViewCommands);
+            const kbViewList = page.locator('.monaco-list-row');
+            const kbCount = await kbViewList.count();
+            console.log(`Found ${kbCount} kb-view commands`);
+
+            for (let i = 0; i < Math.min(kbCount, 10); i++) {
+                const text = await kbViewList.nth(i).textContent();
+                console.log(`KB View command ${i}:`, text?.trim());
+            }
         }
 
         expect(commandExists, 'Switch Workspace Layout command should be registered').toBe(true);
