@@ -106,3 +106,33 @@
     float: left;
     height: 0;
 }
+
+/* Wiki Link Styling */
+.ProseMirror .wiki-link {
+    color: var(--theia-editorLink-activeForeground, #4080D0);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+    border-radius: 2px;
+    padding: 0 2px;
+    margin: 0 -2px;
+    transition: background-color 0.15s ease;
+}
+
+.ProseMirror .wiki-link:hover {
+    background-color: var(--kb-bg-secondary);
+    text-decoration-thickness: 2px;
+}
+
+/* Visual indicator that it's a wiki link (optional bracket effect) */
+.ProseMirror .wiki-link::before {
+    content: '[[';
+    opacity: 0.4;
+    font-size: 0.85em;
+}
+
+.ProseMirror .wiki-link::after {
+    content: ']]';
+    opacity: 0.4;
+    font-size: 0.85em;
+}

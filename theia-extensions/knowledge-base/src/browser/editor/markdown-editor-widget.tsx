@@ -21,8 +21,9 @@ import { Saveable, SaveableSource } from '@theia/core/lib/browser/saveable';
 import { URI } from '@theia/core/lib/common/uri';
 import { TipTapRenderer } from './tiptap-renderer';
 import { MessageService, Emitter, Event } from '@theia/core';
-import { Widget } from '@theia/core/lib/browser';
+import { Widget, OpenerService } from '@theia/core/lib/browser';
 import { FileService } from '@theia/filesystem/lib/browser/file-service';
+import { KnowledgeBaseService } from '../../common/knowledge-base-protocol';
 
 // Source editor component - textarea for now, can be upgraded to Monaco later
 const SourceEditor: React.FC<{
@@ -60,6 +61,12 @@ export class MarkdownEditorWidget extends ReactWidget implements Saveable, Savea
 
     @inject(FileService)
     protected readonly fileService: FileService;
+
+    @inject(OpenerService)
+    protected readonly openerService: OpenerService;
+
+    @inject(KnowledgeBaseService)
+    protected readonly knowledgeBaseService: KnowledgeBaseService;
 
     protected uri: URI | undefined;
     protected content: string = '';
@@ -152,6 +159,24 @@ export class MarkdownEditorWidget extends ReactWidget implements Saveable, Savea
         this.onContentChangedEmitter.fire();
     };
 
+    protected handleWikiLinkClick = async (target: string): Promise<void> => {
+        try {
+            // Try to resolve the wiki link to an existing note
+            const resolvedNote = await this.knowledgeBaseService.resolveWikiLink(target);
+
+            if (resolvedNote) {
+                // Open the existing note
+                const noteUri = new URI(resolvedNote.uri);
+                await this.openerService.getOpener(noteUri).then(opener => opener.open(noteUri));
+            } else {
+                // Note doesn't exist - could create it or show a message
+                this.messageService.info(`Note "${target}" not found. You can create it manually.`);
+            }
+        } catch (error) {
+            this.messageService.error(`Failed to open wiki link: ${error}`);
+        }
+    };
+
     async save(): Promise<void> {
         if (!this.uri || !this.dirty) {
             return;
@@ -213,6 +238,7 @@ export class MarkdownEditorWidget extends ReactWidget implements Saveable, Savea
                         <TipTapRenderer
                             content={this.content}
                             onChange={this.handleContentChange}
+                            onWikiLinkClick={this.handleWikiLinkClick}
                         />
                     ) : (
                         <SourceEditor
