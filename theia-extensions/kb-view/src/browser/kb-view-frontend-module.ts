@@ -14,54 +14,76 @@
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0
  ********************************************************************************/
 
+/**
+ * Frontend module for KB View extension.
+ *
+ * Follows the same pattern as knowledge-base-frontend-module.ts:
+ * - Use ContainerModule from inversify
+ * - Bind services with .toSelf().inSingletonScope()
+ * - Bind contributions to FrontendApplicationContribution for guaranteed instantiation
+ * - Bind to CommandContribution/MenuContribution for command registration
+ */
+
 import { ContainerModule } from '@theia/core/shared/inversify';
-import { CommandContribution, MenuContribution } from '@theia/core/lib/common';
-import { PreferenceContribution } from '@theia/core/lib/common/preferences';
+import { CommandContribution, MenuContribution, PreferenceContribution } from '@theia/core/lib/common';
+import { FrontendApplicationContribution } from '@theia/core/lib/browser';
 import { LabelProviderContribution } from '@theia/core/lib/browser/label-provider';
+
+// Core services
 import { ViewModeService, ViewModeServiceImpl } from './view-mode-service';
-import { KBViewContribution } from './kb-view-contribution';
-import { KB_VIEW_PREFERENCES_SCHEMA } from './kb-view-preferences';
+import { LayoutManager, LayoutManagerImpl } from './layout-manager';
+import { ModeStateManager } from './mode-state-manager';
+
+// UI components
 import { KBViewLabelProvider } from './kb-view-label-provider';
 import { KBViewFileOperations } from './kb-view-file-operations';
 import { KBViewWidgetManager } from './kb-view-widget-manager';
 import { KBViewExtensionDetector } from './kb-view-extension-detector';
-import { ModeStateManager } from './mode-state-manager';
+
+// Filtering services
 import { KBViewCommandFilter } from './kb-view-command-filter';
 import { KBViewMenuFilter } from './kb-view-menu-filter';
 import { KBViewCustomizationService } from './kb-view-customization-service';
 
+// Main contribution and preferences
+import { KBViewContribution } from './kb-view-contribution';
+import { KB_VIEW_PREFERENCES_SCHEMA } from './kb-view-preferences';
+
 export default new ContainerModule(bind => {
-    // Preference schema
+    console.log('[KB-VIEW] Frontend module loading...');
+
+    // Preferences
     bind(PreferenceContribution).toConstantValue({ schema: KB_VIEW_PREFERENCES_SCHEMA });
 
     // Core services
     bind(ViewModeService).to(ViewModeServiceImpl).inSingletonScope();
+    bind(LayoutManager).to(LayoutManagerImpl).inSingletonScope();
     bind(ModeStateManager).toSelf().inSingletonScope();
 
-    // Label provider for file display customization
+    // Label provider for hiding .md extensions
     bind(KBViewLabelProvider).toSelf().inSingletonScope();
     bind(LabelProviderContribution).toService(KBViewLabelProvider);
 
-    // File operations service
+    // UI services
     bind(KBViewFileOperations).toSelf().inSingletonScope();
-
-    // Widget manager for KB View mode
     bind(KBViewWidgetManager).toSelf().inSingletonScope();
-
-    // Extension detector for third-party widget handling
     bind(KBViewExtensionDetector).toSelf().inSingletonScope();
 
-    // Command and menu filtering (Phase 7)
+    // Filtering services
     bind(KBViewCommandFilter).toSelf().inSingletonScope();
     bind(KBViewMenuFilter).toSelf().inSingletonScope();
-
-    // User customization service (Phase 7.5)
     bind(KBViewCustomizationService).toSelf().inSingletonScope();
 
-    // Command and menu contributions
+    // Main contribution - MUST bind to FrontendApplicationContribution
+    // This ensures KBViewContribution is instantiated at startup
     bind(KBViewContribution).toSelf().inSingletonScope();
+    bind(FrontendApplicationContribution).toService(KBViewContribution);
     bind(CommandContribution).toService(KBViewContribution);
-    bind(CommandContribution).toService(KBViewCommandFilter);
     bind(MenuContribution).toService(KBViewContribution);
+
+    // Command and menu filtering contributions
+    bind(CommandContribution).toService(KBViewCommandFilter);
     bind(MenuContribution).toService(KBViewMenuFilter);
+
+    console.log('[KB-VIEW] Frontend module loaded successfully');
 });

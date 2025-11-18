@@ -23,7 +23,14 @@ export const KB_VIEW_PREFERENCES_SCHEMA: PreferenceSchema = {
             type: 'string',
             enum: ['kb-view', 'developer'],
             default: 'kb-view',
-            description: 'Current view mode: KB View (knowledge management) or Developer (full IDE)',
+            description: '[DEPRECATED] Use kbView.currentLayout instead. Current view mode: KB View (knowledge management) or Developer (full IDE)',
+        },
+
+        // Layout Settings (Priority 2 - Named Workspace Layouts)
+        'kbView.currentLayout': {
+            type: 'string',
+            default: 'kb-view',
+            description: 'Current workspace layout ID (e.g., kb-view, developer, research-mode, writing-mode)',
         },
 
         // File Display
@@ -153,7 +160,8 @@ export const KB_VIEW_PREFERENCES_SCHEMA: PreferenceSchema = {
 };
 
 export interface KBViewConfiguration {
-    'kbView.mode': 'kb-view' | 'developer';
+    'kbView.mode': 'kb-view' | 'developer'; // Deprecated - use currentLayout
+    'kbView.currentLayout': string;
     'kbView.hideFileExtensions': boolean;
     'kbView.autoSwitchWidgets': boolean;
     'kbView.defaultWidgets': string[];
