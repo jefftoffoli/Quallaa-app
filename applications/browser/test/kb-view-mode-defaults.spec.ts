@@ -249,7 +249,8 @@ test.describe('KB View Mode - Default Behavior', () => {
 
         // Look for markdown files in the tree
         // They should appear without .md extension in KB View mode
-        const fileTree = page.locator('.theia-FileTree');
+        // Use #files to target the specific file tree widget, not other FileTree elements
+        const fileTree = page.locator('#files .theia-FileTree');
         const fileTreeContent = await fileTree.textContent();
 
         // Files should appear without .md (e.g., "Index" not "Index.md")
@@ -290,7 +291,8 @@ test.describe('KB View Mode - Default Behavior', () => {
         await page.keyboard.type('Switch to Developer');
         await page.waitForTimeout(300);
         await page.keyboard.press('Enter');
-        await page.waitForTimeout(1500);
+        // Allow extra time for state capture and mode switch
+        await page.waitForTimeout(2500);
 
         // Verify Developer mode
         const devBodyClasses = await page.evaluate(() => document.body.className);
@@ -307,7 +309,8 @@ test.describe('KB View Mode - Default Behavior', () => {
         await page.keyboard.type('Switch to KB View');
         await page.waitForTimeout(300);
         await page.keyboard.press('Enter');
-        await page.waitForTimeout(1500);
+        // Allow extra time for state restoration (widgets need to be created/revealed)
+        await page.waitForTimeout(2500);
 
         // Verify state restored
         const restoredState = {

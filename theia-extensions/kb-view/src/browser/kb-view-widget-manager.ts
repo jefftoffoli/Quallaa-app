@@ -62,6 +62,14 @@ export class KBViewWidgetManager {
         for (const widgetId of Object.values(KB_WIDGET_IDS)) {
             this.kbWidgetState.set(widgetId, false);
         }
+
+        // Handle initial mode on startup (delay to ensure shell is ready)
+        setTimeout(() => {
+            const currentMode = this.viewModeService.currentMode;
+            if (currentMode === 'kb-view') {
+                this.switchToKBView();
+            }
+        }, 1000);
     }
 
     /**
