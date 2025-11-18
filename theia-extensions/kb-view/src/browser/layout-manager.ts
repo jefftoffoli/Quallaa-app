@@ -46,6 +46,9 @@ export interface LayoutConfig {
     /** Optional description */
     description?: string;
 
+    /** Base mode for custom layouts (kb-view or developer) - determines UI behavior */
+    baseMode?: 'kb-view' | 'developer';
+
     /** Creation timestamp */
     createdAt?: number;
 
@@ -134,6 +137,7 @@ export class LayoutManagerImpl implements LayoutManager {
     readonly onDidChangeLayout: Event<LayoutId> = this.onDidChangeLayoutEmitter.event;
 
     private readonly LAYOUT_CONTEXT_KEY = 'currentLayoutId';
+    private readonly KB_VIEW_MODE_CONTEXT_KEY = 'kbViewMode';
     private readonly LAYOUTS_METADATA_KEY = 'kb-view.layouts-metadata';
     private readonly LAYOUT_STATE_PREFIX = 'kb-view.layout-state';
     private readonly CURRENT_LAYOUT_PREF = 'kbView.currentLayout';
@@ -159,8 +163,10 @@ export class LayoutManagerImpl implements LayoutManager {
         // Apply initial CSS class
         this.applyCSSClass(this._currentLayoutId);
 
-        // Set context key for when expressions
+        // Set context keys for when expressions
         this.contextKeyService.createKey(this.LAYOUT_CONTEXT_KEY, this._currentLayoutId);
+        // kbViewMode context for backward compatibility with existing when clauses
+        this.contextKeyService.createKey(this.KB_VIEW_MODE_CONTEXT_KEY, this.isKBViewLayout(this._currentLayoutId));
 
         // Listen for preference changes (e.g., from settings UI)
         this.preferences.onPreferenceChanged(event => {
@@ -174,6 +180,20 @@ export class LayoutManagerImpl implements LayoutManager {
 
         // Perform migration from legacy ViewMode if needed
         this.migrateLegacyMode();
+    }
+
+    /**
+     * Check if a layout is KB View mode
+     * Built-in kb-view layout or custom layouts with baseMode='kb-view'
+     */
+    private isKBViewLayout(layoutId: LayoutId): boolean {
+        if (layoutId === 'kb-view') {
+            return true;
+        }
+        // For custom layouts, we need to check baseMode
+        // This is called synchronously, so we can't async lookup
+        // The context key will be updated properly when layout switches
+        return false;
     }
 
     /**
@@ -214,12 +234,16 @@ export class LayoutManagerImpl implements LayoutManager {
         // Update preference at User scope (persists across sessions)
         await this.preferences.set(this.CURRENT_LAYOUT_PREF, layoutId, PreferenceScope.User);
 
-        // Update CSS classes
-        this.applyCSSClass(layoutId);
+        // Update CSS classes - pass config for immediate mode class application
+        this.applyCSSClass(layoutId, layoutConfig);
         this.removeCSSClass(previousLayoutId);
 
-        // Update context key
+        // Update context keys
         this.contextKeyService.setContext(this.LAYOUT_CONTEXT_KEY, layoutId);
+        // Update kbViewMode for backward compatibility with when clauses
+        // For custom layouts, check the baseMode from the config we already have
+        const isKBView = layoutId === 'kb-view' || layoutConfig.baseMode === 'kb-view';
+        this.contextKeyService.setContext(this.KB_VIEW_MODE_CONTEXT_KEY, isKBView);
 
         // Step 3: Load and restore state for new layout
         let savedState = await this.loadLayoutState(layoutId);
@@ -255,12 +279,25 @@ export class LayoutManagerImpl implements LayoutManager {
             return;
         }
 
+        // Determine base mode from current layout
+        const currentLayout = await this.getLayout(this._currentLayoutId);
+        let baseMode: 'kb-view' | 'developer';
+        if (this._currentLayoutId === 'kb-view') {
+            baseMode = 'kb-view';
+        } else if (this._currentLayoutId === 'developer') {
+            baseMode = 'developer';
+        } else {
+            // Inherit from current layout's baseMode, default to developer
+            baseMode = currentLayout?.baseMode || 'developer';
+        }
+
         // Create or update custom layout
         const layoutConfig: LayoutConfig = {
             id: layoutId,
             name,
             isBuiltIn: false,
             description,
+            baseMode,
             createdAt: existingLayout?.createdAt || Date.now(),
             modifiedAt: Date.now(),
         };
@@ -382,17 +419,35 @@ export class LayoutManagerImpl implements LayoutManager {
      * CSS class management
      */
 
-    private applyCSSClass(layoutId: LayoutId): void {
-        // Check if it's a built-in layout with a specific CSS class
+    private applyCSSClass(layoutId: LayoutId, config?: LayoutConfig): void {
+        // Built-in layouts have their mode class (kb-view-mode, developer-mode)
         const builtInLayout = BUILT_IN_LAYOUTS[layoutId];
-        const className = builtInLayout?.cssClass || `custom-layout-${layoutId}`;
-        document.body.classList.add(className);
+        if (builtInLayout) {
+            document.body.classList.add(builtInLayout.cssClass!);
+        } else {
+            // Custom layouts: apply both custom class and mode class
+            document.body.classList.add(`custom-layout-${layoutId}`);
+
+            // Apply the base mode class based on config
+            if (config?.baseMode === 'kb-view') {
+                document.body.classList.remove('developer-mode');
+                document.body.classList.add('kb-view-mode');
+            } else {
+                document.body.classList.remove('kb-view-mode');
+                document.body.classList.add('developer-mode');
+            }
+        }
     }
 
     private removeCSSClass(layoutId: LayoutId): void {
         const builtInLayout = BUILT_IN_LAYOUTS[layoutId];
-        const className = builtInLayout?.cssClass || `custom-layout-${layoutId}`;
-        document.body.classList.remove(className);
+        if (builtInLayout) {
+            document.body.classList.remove(builtInLayout.cssClass!);
+        } else {
+            // Custom layouts: remove both custom class and mode classes
+            document.body.classList.remove(`custom-layout-${layoutId}`);
+            // Mode classes will be replaced by the new layout's mode
+        }
     }
 
     /**

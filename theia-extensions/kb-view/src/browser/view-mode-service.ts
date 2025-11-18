@@ -15,10 +15,8 @@
  ********************************************************************************/
 
 import { injectable, inject } from '@theia/core/shared/inversify';
-import { PreferenceService, PreferenceChange, PreferenceScope } from '@theia/core/lib/common/preferences';
 import { Emitter, Event } from '@theia/core/lib/common/event';
-import { ContextKeyService } from '@theia/core/lib/browser/context-key-service';
-import { ModeStateManager } from './mode-state-manager';
+import { LayoutManager } from './layout-manager';
 
 export type ViewMode = 'kb-view' | 'developer';
 
@@ -32,63 +30,47 @@ export interface ViewModeService {
     toggleMode(): Promise<void>;
 }
 
+/**
+ * ViewModeService - Backward-compatible wrapper around LayoutManager
+ *
+ * This service is maintained for backward compatibility with existing code
+ * that uses the ViewMode concept (kb-view/developer). It delegates to
+ * LayoutManager which is now the single source of truth for all layouts.
+ */
 @injectable()
 export class ViewModeServiceImpl implements ViewModeService {
-    @inject(PreferenceService)
-    protected readonly preferences: PreferenceService;
-
-    @inject(ContextKeyService)
-    protected readonly contextKeyService: ContextKeyService;
-
-    @inject(ModeStateManager)
-    protected readonly stateManager: ModeStateManager;
-
-    private _currentMode: ViewMode = 'developer';
-    private _initialized = false;
+    @inject(LayoutManager)
+    protected readonly layoutManager: LayoutManager;
 
     private readonly onDidChangeModeEmitter = new Emitter<ViewMode>();
     readonly onDidChangeMode: Event<ViewMode> = this.onDidChangeModeEmitter.event;
 
-    private readonly KB_VIEW_CONTEXT_KEY = 'kbViewMode';
+    private _initialized = false;
 
     /**
-     * Auto-initialize on first access if not already initialized
+     * Auto-initialize on first access
      */
     private ensureInitialized(): void {
         if (!this._initialized) {
             this._initialized = true;
-            this.initializeSync();
+            // Subscribe to layout changes and fire mode change events
+            this.layoutManager.onDidChangeLayout(layoutId => {
+                const mode = this.layoutIdToMode(layoutId);
+                this.onDidChangeModeEmitter.fire(mode);
+            });
         }
     }
 
     /**
-     * Synchronous initialization to avoid async DI issues
+     * Convert layout ID to ViewMode
+     * Only 'kb-view' is considered kb-view mode, everything else is developer
      */
-    private initializeSync(): void {
-        // Read initial mode from preferences
-        const savedMode = this.preferences.get<ViewMode>('kbView.mode', 'developer');
-        this._currentMode = savedMode;
-
-        // Apply initial CSS class
-        this.applyCSSClass(this._currentMode);
-
-        // Set context key for when expressions
-        this.contextKeyService.createKey(this.KB_VIEW_CONTEXT_KEY, this._currentMode === 'kb-view');
-
-        // Listen for preference changes (e.g., from settings UI)
-        this.preferences.onPreferenceChanged((event: PreferenceChange) => {
-            if (event.preferenceName === 'kbView.mode') {
-                const newMode = event.newValue as ViewMode;
-                if (newMode !== this._currentMode) {
-                    this.switchMode(newMode);
-                }
-            }
-        });
+    private layoutIdToMode(layoutId: string): ViewMode {
+        return layoutId === 'kb-view' ? 'kb-view' : 'developer';
     }
 
     /**
-     * Legacy async initialize method - now just ensures initialization happened
-     * @deprecated Use is automatic now via ensureInitialized()
+     * @deprecated Initialization is automatic
      */
     async initialize(): Promise<void> {
         this.ensureInitialized();
@@ -96,64 +78,20 @@ export class ViewModeServiceImpl implements ViewModeService {
 
     get currentMode(): ViewMode {
         this.ensureInitialized();
-        return this._currentMode;
+        return this.layoutIdToMode(this.layoutManager.currentLayoutId);
     }
 
     async switchMode(mode: ViewMode): Promise<void> {
         this.ensureInitialized();
-        if (this._currentMode === mode) {
-            return; // Already in this mode
-        }
-
-        const previousMode = this._currentMode;
-
-        // Step 1: Capture current state before switching
-        const currentState = await this.stateManager.captureState(previousMode);
-        await this.stateManager.saveState(previousMode, currentState);
-
-        // Step 2: Update mode
-        this._currentMode = mode;
-
-        // Update preference at User scope (persists across sessions)
-        await this.preferences.set('kbView.mode', mode, PreferenceScope.User);
-
-        // Update CSS classes
-        this.applyCSSClass(mode);
-        this.removeCSSClass(previousMode);
-
-        // Update context key
-        this.contextKeyService.setContext(this.KB_VIEW_CONTEXT_KEY, mode === 'kb-view');
-
-        // Step 3: Load and restore state for new mode
-        let savedState = await this.stateManager.loadState(mode);
-
-        // If no saved state exists and switching to KB View, use default
-        if (!savedState && mode === 'kb-view') {
-            savedState = this.stateManager.getDefaultKBViewState();
-        }
-
-        // Restore state if available
-        if (savedState) {
-            await this.stateManager.restoreState(savedState);
-        }
-
-        // Notify listeners (after state restoration is complete)
-        this.onDidChangeModeEmitter.fire(mode);
+        // Delegate to LayoutManager - modes are just built-in layouts
+        await this.layoutManager.switchLayout(mode);
     }
 
     async toggleMode(): Promise<void> {
         this.ensureInitialized();
-        const newMode: ViewMode = this._currentMode === 'kb-view' ? 'developer' : 'kb-view';
-        await this.switchMode(newMode);
-    }
-
-    private applyCSSClass(mode: ViewMode): void {
-        const className = mode === 'kb-view' ? 'kb-view-mode' : 'developer-mode';
-        document.body.classList.add(className);
-    }
-
-    private removeCSSClass(mode: ViewMode): void {
-        const className = mode === 'kb-view' ? 'kb-view-mode' : 'developer-mode';
-        document.body.classList.remove(className);
+        const currentLayoutId = this.layoutManager.currentLayoutId;
+        // Toggle between kb-view and developer
+        const newMode: ViewMode = currentLayoutId === 'kb-view' ? 'developer' : 'kb-view';
+        await this.layoutManager.switchLayout(newMode);
     }
 }

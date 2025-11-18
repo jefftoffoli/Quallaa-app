@@ -74,6 +74,9 @@ export class KBViewCommandFilter implements CommandContribution {
         'terminal:split',
         'terminal:kill',
         'terminal:clear',
+        'workbench.action.terminal.toggleTerminal',
+        'workbench.action.terminal.new',
+        'workbench.action.terminal.focus',
 
         // Task runner commands
         'task:run',
@@ -112,10 +115,32 @@ export class KBViewCommandFilter implements CommandContribution {
     ]);
 
     registerCommands(registry: CommandRegistry): void {
-        // Command filtering is handled via CSS (see menu-filter.css)
-        // This avoids async initialization issues with command registry wrapping.
-        // Commands are visually hidden in menus and command palette based on mode.
-        // No-op: CSS-based filtering is more performant and avoids DI issues
+        // Register handlers that disable developer commands in KB View mode
+        // This blocks both menu items AND keybindings
+        for (const commandId of this.developerCommands) {
+            this.registerBlockingHandler(registry, commandId);
+        }
+    }
+
+    /**
+     * Registers a handler that blocks a command when in KB View mode.
+     * The handler uses isEnabled to prevent keybinding execution.
+     */
+    private registerBlockingHandler(registry: CommandRegistry, commandId: string): void {
+        // Check if command exists (it might not be registered yet)
+        // We register our handler anyway - it will take effect when the command is available
+        registry.registerHandler(commandId, {
+            execute: () => {
+                // Do nothing - command is blocked in KB View mode
+                // The original handler won't be called because we're the active handler
+            },
+            isEnabled: () =>
+                // Only enabled when NOT in KB View mode
+                this.viewModeService.currentMode !== 'kb-view',
+            isVisible: () =>
+                // Hide in menus when in KB View mode
+                this.viewModeService.currentMode !== 'kb-view',
+        });
     }
 
     /**

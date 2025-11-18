@@ -127,11 +127,11 @@ test.describe('Layout User Journeys', () => {
 
             // Custom layouts get their own CSS class
             expect(finalBodyClasses).toContain('custom-layout-my-research-layout');
-            console.log('✓ Successfully switched to saved custom layout');
 
-            // Note: Custom layouts currently don't restore the mode (kb-view/developer)
-            // This is an architecture issue to address - LayoutManager and ViewModeService
-            // don't coordinate. Filed for future improvement.
+            // Custom layouts should also restore the mode they were saved in
+            // This layout was saved while in KB View mode, so it should have kb-view-mode
+            expect(finalBodyClasses).toContain('kb-view-mode');
+            console.log('✓ Successfully switched to saved custom layout with correct mode');
         } else {
             // If custom layout doesn't appear, the save didn't work
             console.log('❌ Custom layout not found - save functionality may not be working');
