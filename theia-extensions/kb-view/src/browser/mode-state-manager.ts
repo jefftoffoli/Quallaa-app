@@ -19,7 +19,6 @@ import { ApplicationShell, WidgetManager } from '@theia/core/lib/browser';
 import { StorageService } from '@theia/core/lib/browser/storage-service';
 import { EditorManager } from '@theia/editor/lib/browser';
 import { URI } from '@theia/core/lib/common/uri';
-import { ViewMode } from './view-mode-service';
 import { KB_WIDGET_IDS } from './kb-view-constants';
 
 /**
@@ -90,9 +89,9 @@ export class ModeStateManager {
     private readonly STORAGE_KEY_PREFIX = 'kb-view.mode-state';
 
     /**
-     * Capture current UI state for the given mode
+     * Capture current UI state for the given layout/mode
      */
-    async captureState(mode: ViewMode): Promise<ModeState> {
+    async captureState(layoutId: string): Promise<ModeState> {
         const widgetStates = this.captureWidgetStates();
         const layoutState = this.captureLayoutState();
         const editorStates = await this.captureEditorStates();
@@ -109,16 +108,16 @@ export class ModeStateManager {
     /**
      * Save state to persistent storage
      */
-    async saveState(mode: ViewMode, state: ModeState): Promise<void> {
-        const key = `${this.STORAGE_KEY_PREFIX}.${mode}`;
+    async saveState(layoutId: string, state: ModeState): Promise<void> {
+        const key = `${this.STORAGE_KEY_PREFIX}.${layoutId}`;
         await this.storage.setData(key, state);
     }
 
     /**
      * Load state from persistent storage
      */
-    async loadState(mode: ViewMode): Promise<ModeState | undefined> {
-        const key = `${this.STORAGE_KEY_PREFIX}.${mode}`;
+    async loadState(layoutId: string): Promise<ModeState | undefined> {
+        const key = `${this.STORAGE_KEY_PREFIX}.${layoutId}`;
         return this.storage.getData<ModeState>(key);
     }
 
