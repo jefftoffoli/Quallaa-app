@@ -146,6 +146,18 @@ export const WikiLink = Node.create<WikiLinkOptions>({
         ];
     },
 
+    addKeyboardShortcuts() {
+        return {
+            'Mod-Shift-k': () => {
+                const target = window.prompt('Enter wiki link target (note name):');
+                if (target) {
+                    return this.editor.commands.insertWikiLink(target);
+                }
+                return false;
+            },
+        };
+    },
+
     addProseMirrorPlugins() {
         const { onLinkClick } = this.options;
 

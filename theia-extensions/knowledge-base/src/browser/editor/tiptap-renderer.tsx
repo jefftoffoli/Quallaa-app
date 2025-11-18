@@ -20,6 +20,125 @@ import StarterKit from '@tiptap/starter-kit';
 import { defaultMarkdownParser, defaultMarkdownSerializer } from 'prosemirror-markdown';
 import { WikiLink, serializeWikiLinkToMarkdown } from './tiptap-wiki-link';
 
+// Formatting toolbar component
+interface ToolbarProps {
+    editor: Editor | null;
+}
+
+const FormattingToolbar: React.FC<ToolbarProps> = ({ editor }) => {
+    if (!editor) {
+        return undefined;
+    }
+
+    const ToolbarButton: React.FC<{
+        onClick: () => void;
+        isActive?: boolean;
+        title: string;
+        icon: string;
+    }> = ({ onClick, isActive, title, icon }) => (
+        <button
+            onClick={onClick}
+            className={`quallaa-toolbar-button ${isActive ? 'active' : ''}`}
+            title={title}
+            type="button"
+        >
+            <i className={`codicon codicon-${icon}`}></i>
+        </button>
+    );
+
+    return (
+        <div className="quallaa-formatting-toolbar">
+            <div className="toolbar-group">
+                <ToolbarButton
+                    onClick={() => editor.chain().focus().toggleBold().run()}
+                    isActive={editor.isActive('bold')}
+                    title="Bold (Cmd+B)"
+                    icon="bold"
+                />
+                <ToolbarButton
+                    onClick={() => editor.chain().focus().toggleItalic().run()}
+                    isActive={editor.isActive('italic')}
+                    title="Italic (Cmd+I)"
+                    icon="italic"
+                />
+                <ToolbarButton
+                    onClick={() => editor.chain().focus().toggleStrike().run()}
+                    isActive={editor.isActive('strike')}
+                    title="Strikethrough"
+                    icon="text-size"
+                />
+                <ToolbarButton
+                    onClick={() => editor.chain().focus().toggleCode().run()}
+                    isActive={editor.isActive('code')}
+                    title="Inline Code (Cmd+E)"
+                    icon="code"
+                />
+            </div>
+            <div className="toolbar-separator" />
+            <div className="toolbar-group">
+                <ToolbarButton
+                    onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+                    isActive={editor.isActive('heading', { level: 1 })}
+                    title="Heading 1"
+                    icon="symbol-class"
+                />
+                <ToolbarButton
+                    onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+                    isActive={editor.isActive('heading', { level: 2 })}
+                    title="Heading 2"
+                    icon="symbol-method"
+                />
+                <ToolbarButton
+                    onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+                    isActive={editor.isActive('heading', { level: 3 })}
+                    title="Heading 3"
+                    icon="symbol-field"
+                />
+            </div>
+            <div className="toolbar-separator" />
+            <div className="toolbar-group">
+                <ToolbarButton
+                    onClick={() => editor.chain().focus().toggleBulletList().run()}
+                    isActive={editor.isActive('bulletList')}
+                    title="Bullet List"
+                    icon="list-unordered"
+                />
+                <ToolbarButton
+                    onClick={() => editor.chain().focus().toggleOrderedList().run()}
+                    isActive={editor.isActive('orderedList')}
+                    title="Numbered List"
+                    icon="list-ordered"
+                />
+                <ToolbarButton
+                    onClick={() => editor.chain().focus().toggleBlockquote().run()}
+                    isActive={editor.isActive('blockquote')}
+                    title="Blockquote"
+                    icon="quote"
+                />
+                <ToolbarButton
+                    onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+                    isActive={editor.isActive('codeBlock')}
+                    title="Code Block"
+                    icon="symbol-namespace"
+                />
+            </div>
+            <div className="toolbar-separator" />
+            <div className="toolbar-group">
+                <ToolbarButton
+                    onClick={() => {
+                        const target = window.prompt('Enter link target (note name):');
+                        if (target) {
+                            editor.chain().focus().insertWikiLink(target).run();
+                        }
+                    }}
+                    title="Insert Wiki Link (Cmd+Shift+K)"
+                    icon="link"
+                />
+            </div>
+        </div>
+    );
+};
+
 // Regex for wiki links - matches [[target]] and [[target|display]]
 const WIKI_LINK_REGEX = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
 
@@ -217,6 +336,7 @@ export const TipTapRenderer: React.FC<TipTapRendererProps> = ({
     });
 
     // Update content when prop changes (e.g., file reload or mode switch)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     React.useEffect(() => {
         if (editor && content) {
             // Compare current markdown with new content
@@ -233,6 +353,7 @@ export const TipTapRenderer: React.FC<TipTapRendererProps> = ({
 
     return (
         <div className='quallaa-editor-container'>
+            <FormattingToolbar editor={editor} />
             <div className='quallaa-tiptap-editor'>
                 <EditorContent editor={editor} />
             </div>
