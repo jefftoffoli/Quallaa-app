@@ -21,10 +21,12 @@ import '../../src/browser/style/wiki-links.css';
 import '../../src/browser/style/backlinks.css';
 import '../../src/browser/style/graph.css';
 import '../../src/browser/style/tags.css';
+import '../../src/browser/editor/editor-styles.css';
 
 import { ContainerModule } from '@theia/core/shared/inversify';
-import { FrontendApplicationContribution, WidgetFactory } from '@theia/core/lib/browser';
+import { FrontendApplicationContribution, WidgetFactory, OpenHandler } from '@theia/core/lib/browser';
 import { CommandContribution, MenuContribution } from '@theia/core/lib/common';
+import { URI } from '@theia/core/lib/common/uri';
 // eslint-disable-next-line deprecation/deprecation
 import { WebSocketConnectionProvider } from '@theia/core/lib/browser/messaging';
 import { WikiLinkContribution } from './wiki-links/wiki-link-contribution';
@@ -40,6 +42,8 @@ import { GraphContribution } from './graph/graph-contribution';
 import { TagsWidget, TAGS_WIDGET_ID } from './tags/tags-widget';
 import { TagsContribution } from './tags/tags-contribution';
 import { TemplateContribution } from './templates/template-contribution';
+import { MarkdownEditorWidget } from './editor/markdown-editor-widget';
+import { MarkdownEditorOpenHandler } from './editor/markdown-editor-open-handler';
 
 export default new ContainerModule(bind => {
     // Wiki link services - following Foam's pattern: LinkProvider handles everything
@@ -109,4 +113,26 @@ export default new ContainerModule(bind => {
             return connection.createProxy<KnowledgeBaseService>(KnowledgeBasePath);
         })
         .inSingletonScope();
+
+    // --- WYSIWYG Editor (Phase 3) ---
+
+    // Bind the widget
+    bind(MarkdownEditorWidget).toSelf();
+
+    // Bind the Widget Factory
+    bind(WidgetFactory).toDynamicValue(context => ({
+        id: MarkdownEditorWidget.ID,
+        createWidget: (options: { uri?: string }) => {
+            const widget = context.container.get(MarkdownEditorWidget);
+            // If URI was passed in options, set it
+            if (options && options.uri) {
+                widget.setUri(new URI(options.uri));
+            }
+            return widget;
+        }
+    })).inSingletonScope();
+
+    // Bind the Open Handler
+    bind(MarkdownEditorOpenHandler).toSelf().inSingletonScope();
+    bind(OpenHandler).toService(MarkdownEditorOpenHandler);
 });

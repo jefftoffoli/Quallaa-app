@@ -1,0 +1,108 @@
+/* Editor Container */
+.quallaa-editor-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background-color: var(--kb-bg-primary);
+    color: var(--kb-text-primary);
+    overflow: hidden;
+}
+
+/* Toolbar (Placeholder for Phase 3.2) */
+.quallaa-editor-toolbar {
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--kb-border-subtle);
+    background-color: var(--kb-bg-secondary);
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* The Actual Editor Area */
+.quallaa-tiptap-editor {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 48px;
+}
+
+/* TipTap Content Styling (ProseMirror) */
+.ProseMirror {
+    outline: none;
+    min-height: 100%;
+    font-family: var(--kb-font-content);
+    font-size: var(--kb-font-size-medium);
+    line-height: var(--kb-line-height-relaxed);
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.ProseMirror p {
+    margin-bottom: 1em;
+}
+
+.ProseMirror h1, .ProseMirror h2, .ProseMirror h3 {
+    color: var(--kb-text-primary);
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+    line-height: 1.2;
+}
+
+.ProseMirror h1 {
+    font-size: 2em;
+}
+
+.ProseMirror h2 {
+    font-size: 1.5em;
+}
+
+.ProseMirror h3 {
+    font-size: 1.25em;
+}
+
+.ProseMirror ul, .ProseMirror ol {
+    padding-left: 1.5em;
+    margin-bottom: 1em;
+}
+
+.ProseMirror li {
+    margin-bottom: 0.25em;
+}
+
+.ProseMirror code {
+    background-color: var(--kb-bg-secondary);
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+    font-family: var(--monaco-monospace-font);
+    font-size: 0.9em;
+}
+
+.ProseMirror pre {
+    background-color: var(--kb-bg-secondary);
+    padding: 1em;
+    border-radius: 4px;
+    overflow-x: auto;
+}
+
+.ProseMirror blockquote {
+    border-left: 3px solid var(--kb-accent-color);
+    padding-left: 1em;
+    margin-left: 0;
+    color: var(--kb-text-muted);
+}
+
+.ProseMirror a {
+    color: var(--kb-link-color);
+    text-decoration: none;
+}
+
+.ProseMirror a:hover {
+    text-decoration: underline;
+}
+
+/* Placeholder styling */
+.ProseMirror p.is-empty::before {
+    content: attr(data-placeholder);
+    color: var(--kb-text-muted);
+    pointer-events: none;
+    float: left;
+    height: 0;
+}
