@@ -52,7 +52,7 @@ export class MarkdownEditorOpenHandler implements OpenHandler {
         );
 
         if (MarkdownEditorWidget.is(widget)) {
-            widget.setUri(uri);
+            await widget.setUri(uri);
         }
 
         // Add to shell if not already there

@@ -15,32 +15,74 @@
  ********************************************************************************/
 
 import * as React from '@theia/core/shared/react';
-import { useEditor, EditorContent } from '@tiptap/react';
+import { useEditor, EditorContent, Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import { defaultMarkdownParser, defaultMarkdownSerializer } from 'prosemirror-markdown';
 
 export interface TipTapRendererProps {
-    initialContent?: string;
+    /** Markdown content to display */
+    content: string;
+    /** Called when content changes, with new markdown */
+    onChange?: (markdown: string) => void;
+    /** Whether the editor is read-only */
+    readOnly?: boolean;
+    /** Called when editor is ready */
+    onEditorReady?: (editor: Editor) => void;
 }
 
-export const TipTapRenderer: React.FC<TipTapRendererProps> = ({ initialContent }) => {
+export const TipTapRenderer: React.FC<TipTapRendererProps> = ({
+    content,
+    onChange,
+    readOnly = false,
+    onEditorReady
+}) => {
+    // Helper function to serialize ProseMirror doc to markdown
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const serializeToMarkdown = (doc: any): string => defaultMarkdownSerializer.serialize(doc);
+
     const editor = useEditor({
         extensions: [
             StarterKit,
         ],
-        content: initialContent || '<h1>Welcome to Quallaa Live Preview</h1><p>Start typing...</p>',
+        // Parse markdown content to ProseMirror document
+        content: content ? defaultMarkdownParser.parse(content)?.toJSON() : '',
+        editable: !readOnly,
         editorProps: {
             attributes: {
                 class: 'quallaa-tiptap-instance',
             },
         },
+        onUpdate: ({ editor: currentEditor }) => {
+            if (onChange) {
+                // Serialize ProseMirror document to markdown
+                const markdown = serializeToMarkdown(currentEditor.state.doc);
+                onChange(markdown);
+            }
+        },
+        onCreate: ({ editor: createdEditor }) => {
+            if (onEditorReady) {
+                onEditorReady(createdEditor);
+            }
+        },
     });
+
+    // Update content when prop changes (e.g., file reload or mode switch)
+    React.useEffect(() => {
+        if (editor && content) {
+            // Compare current markdown with new content
+            const currentMarkdown = serializeToMarkdown(editor.state.doc);
+            if (content !== currentMarkdown) {
+                // Parse new markdown and set as content
+                const parsedDoc = defaultMarkdownParser.parse(content);
+                if (parsedDoc) {
+                    editor.commands.setContent(parsedDoc.toJSON());
+                }
+            }
+        }
+    }, [content, editor]);
 
     return (
         <div className='quallaa-editor-container'>
-            <div className='quallaa-editor-toolbar'>
-                {/* Toolbar buttons will go here in Phase 3.2 */}
-                <span style={{ fontSize: '11px', color: 'var(--kb-text-muted)' }}>Live Preview Mode</span>
-            </div>
             <div className='quallaa-tiptap-editor'>
                 <EditorContent editor={editor} />
             </div>

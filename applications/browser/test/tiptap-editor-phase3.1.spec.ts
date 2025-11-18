@@ -28,7 +28,10 @@ test.describe('TipTap Editor Phase 3.1', () => {
 
         // Search for a .md file (foo.md exists in test-workspace)
         await page.keyboard.type('foo.md');
-        await page.waitForTimeout(1000);
+
+        // Wait for the dropdown to show results
+        await page.waitForSelector('.quick-input-list-entry', { timeout: 5000 }).catch(() => {});
+        await page.waitForTimeout(500);
 
         // Press Enter to open the first result
         await page.keyboard.press('Enter');
@@ -106,5 +109,97 @@ test.describe('TipTap Editor Phase 3.1', () => {
         await page.screenshot({ path: 'screenshots/tiptap-phase3.1-toolbar-test.png', fullPage: true });
 
         expect(hasToolbar, 'Toolbar should be present').toBe(true);
+    });
+
+    test('File content loads into TipTap editor (Phase 3.3)', async ({ page }) => {
+        console.log('Opening foo.md to verify content loading');
+
+        // Open file using Quick Open
+        await page.keyboard.press('Meta+p');
+        await page.waitForTimeout(500);
+        await page.keyboard.type('foo.md');
+        await page.waitForTimeout(1000);
+        await page.keyboard.press('Enter');
+        await page.waitForTimeout(3000);
+
+        // Check that actual file content is displayed
+        const proseMirror = page.locator('.ProseMirror');
+        const content = await proseMirror.textContent();
+        console.log('Editor content:', content);
+
+        // foo.md should contain actual markdown content
+        // The content should NOT be the default "Welcome to Quallaa Live Preview"
+        expect(content).not.toContain('Welcome to Quallaa Live Preview');
+        expect(content).not.toContain('This is the new Live Preview editor');
+
+        console.log('✓ File content loaded correctly');
+    });
+
+    test('Editing marks file as dirty (Phase 3.3)', async ({ page }) => {
+        console.log('Testing dirty state indicator');
+
+        // Open file using Quick Open
+        await page.keyboard.press('Meta+p');
+        await page.waitForTimeout(500);
+        await page.keyboard.type('foo.md');
+        await page.waitForTimeout(1000);
+        await page.keyboard.press('Enter');
+        await page.waitForTimeout(3000);
+
+        // Get the tab title before editing
+        const tab = page.locator('.p-TabBar-tab.p-mod-current .p-TabBar-tabLabel');
+        const titleBefore = await tab.textContent();
+        console.log('Tab title before edit:', titleBefore);
+
+        // Make sure it doesn't have dirty indicator yet
+        expect(titleBefore).not.toContain('•');
+
+        // Type something in the editor
+        const proseMirror = page.locator('.ProseMirror');
+        await proseMirror.click();
+        await page.keyboard.type('Modified content');
+        await page.waitForTimeout(500);
+
+        // Check that dirty indicator appears
+        const titleAfter = await tab.textContent();
+        console.log('Tab title after edit:', titleAfter);
+        expect(titleAfter).toContain('•');
+
+        console.log('✓ Dirty state indicator works');
+    });
+
+    test('Cmd+S saves file and clears dirty state (Phase 3.3)', async ({ page }) => {
+        console.log('Testing save functionality');
+
+        // Open file using Quick Open
+        await page.keyboard.press('Meta+p');
+        await page.waitForTimeout(500);
+        await page.keyboard.type('foo.md');
+        await page.waitForTimeout(1000);
+        await page.keyboard.press('Enter');
+        await page.waitForTimeout(3000);
+
+        // Type something in the editor
+        const proseMirror = page.locator('.ProseMirror');
+        await proseMirror.click();
+        await page.keyboard.type(' - test save');
+        await page.waitForTimeout(500);
+
+        // Check dirty indicator
+        const tab = page.locator('.p-TabBar-tab.p-mod-current .p-TabBar-tabLabel');
+        const titleAfterEdit = await tab.textContent();
+        console.log('Tab title after edit:', titleAfterEdit);
+        expect(titleAfterEdit).toContain('•');
+
+        // Save with Cmd+S
+        await page.keyboard.press('Meta+s');
+        await page.waitForTimeout(1000);
+
+        // Check that dirty indicator is cleared
+        const titleAfterSave = await tab.textContent();
+        console.log('Tab title after save:', titleAfterSave);
+        expect(titleAfterSave).not.toContain('•');
+
+        console.log('✓ Save functionality works');
     });
 });
