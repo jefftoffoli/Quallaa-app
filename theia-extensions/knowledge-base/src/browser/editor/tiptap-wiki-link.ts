@@ -17,6 +17,8 @@
 /* eslint-disable @typescript-eslint/tslint/config */
 import { Node, mergeAttributes, nodeInputRule } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
+import Suggestion, { SuggestionOptions } from '@tiptap/suggestion';
+import { Note } from '../../common/knowledge-base-protocol';
 
 // Regex to match wiki links: [[target]] or [[target|display]]
 const WIKI_LINK_INPUT_REGEX = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]$/;
@@ -24,6 +26,12 @@ const WIKI_LINK_INPUT_REGEX = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]$/;
 export interface WikiLinkOptions {
     /** Callback when a wiki link is clicked */
     onLinkClick?: (target: string) => void;
+    /** Callback to request a wiki link target from user (replaces window.prompt) */
+    onRequestLinkTarget?: () => Promise<string | undefined>;
+    /** Function to search notes for autocomplete */
+    searchNotes?: (query: string) => Promise<Note[]>;
+    /** Suggestion configuration (set by extension, not by user) */
+    suggestion?: Omit<SuggestionOptions, 'editor'>;
     /** HTML attributes for the wiki link element */
     HTMLAttributes: Record<string, string>;
 }
@@ -57,6 +65,9 @@ export const WikiLink = Node.create<WikiLinkOptions>({
     addOptions() {
         return {
             onLinkClick: undefined,
+            onRequestLinkTarget: undefined,
+            searchNotes: undefined,
+            suggestion: undefined,
             HTMLAttributes: {
                 class: 'wiki-link',
             },
@@ -147,21 +158,36 @@ export const WikiLink = Node.create<WikiLinkOptions>({
     },
 
     addKeyboardShortcuts() {
+        const { onRequestLinkTarget } = this.options;
+
         return {
             'Mod-Shift-k': () => {
-                const target = window.prompt('Enter wiki link target (note name):');
-                if (target) {
-                    return this.editor.commands.insertWikiLink(target);
+                if (onRequestLinkTarget) {
+                    // Use async callback - return true to indicate command handled
+                    onRequestLinkTarget().then(target => {
+                        if (target) {
+                            this.editor.commands.insertWikiLink(target);
+                        }
+                    });
+                    return true;
+                } else {
+                    // Fallback to window.prompt
+                    const target = window.prompt('Enter wiki link target (note name):');
+                    if (target) {
+                        return this.editor.commands.insertWikiLink(target);
+                    }
+                    return false;
                 }
-                return false;
             },
         };
     },
 
     addProseMirrorPlugins() {
-        const { onLinkClick } = this.options;
+        const { onLinkClick, suggestion } = this.options;
+        const plugins: Plugin[] = [];
 
-        return [
+        // Add click handler plugin
+        plugins.push(
             new Plugin({
                 key: new PluginKey('wikiLinkClick'),
                 props: {
@@ -187,8 +213,20 @@ export const WikiLink = Node.create<WikiLinkOptions>({
                         return false;
                     },
                 },
-            }),
-        ];
+            })
+        );
+
+        // Add suggestion plugin if configured
+        if (suggestion) {
+            plugins.push(
+                Suggestion({
+                    editor: this.editor,
+                    ...suggestion,
+                })
+            );
+        }
+
+        return plugins;
     },
 });
 

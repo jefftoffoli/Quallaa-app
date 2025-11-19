@@ -20,35 +20,11 @@ import { ReactWidget } from '@theia/core/lib/browser/widgets/react-widget';
 import { Saveable, SaveableSource } from '@theia/core/lib/browser/saveable';
 import { URI } from '@theia/core/lib/common/uri';
 import { TipTapRenderer } from './tiptap-renderer';
-import { MessageService, Emitter, Event } from '@theia/core';
+import { MessageService, Emitter, Event, nls } from '@theia/core';
 import { Widget, OpenerService } from '@theia/core/lib/browser';
 import { FileService } from '@theia/filesystem/lib/browser/file-service';
 import { KnowledgeBaseService } from '../../common/knowledge-base-protocol';
-
-// Source editor component - textarea for now, can be upgraded to Monaco later
-const SourceEditor: React.FC<{
-    content: string;
-    onChange: (value: string) => void;
-}> = ({ content, onChange }) => (
-    <textarea
-        className='quallaa-source-editor'
-        style={{
-            width: '100%',
-            height: '100%',
-            background: 'var(--theia-editor-background)',
-            color: 'var(--theia-editor-foreground)',
-            border: 'none',
-            padding: '24px 48px',
-            resize: 'none',
-            fontFamily: 'var(--monaco-monospace-font)',
-            fontSize: 'var(--kb-font-size-medium)',
-            lineHeight: '1.6',
-            outline: 'none',
-        }}
-        value={content}
-        onChange={e => onChange(e.target.value)}
-    />
-);
+import { QuickInputService } from '@theia/core/lib/browser/quick-input';
 
 @injectable()
 export class MarkdownEditorWidget extends ReactWidget implements Saveable, SaveableSource {
@@ -68,11 +44,17 @@ export class MarkdownEditorWidget extends ReactWidget implements Saveable, Savea
     @inject(KnowledgeBaseService)
     protected readonly knowledgeBaseService: KnowledgeBaseService;
 
+    @inject(QuickInputService)
+    protected readonly quickInputService: QuickInputService;
+
     protected uri: URI | undefined;
     protected content: string = '';
     protected originalContent: string = '';
     protected _dirty: boolean = false;
     protected mode: 'preview' | 'source' = 'preview';
+
+    // Fix: Add switching state to force clean unmount/remount
+    protected isSwitching: boolean = false;
 
     // Saveable implementation
     readonly autoSave: 'off' | 'afterDelay' | 'onFocusChange' | 'onWindowChange' = 'off';
@@ -99,6 +81,10 @@ export class MarkdownEditorWidget extends ReactWidget implements Saveable, Savea
         this.title.closable = true;
         this.title.iconClass = 'codicon codicon-book';
         this.addClass('quallaa-markdown-editor');
+
+        // Fix: Ensure the host node has flex layout so children with height:100% work correctly
+        this.node.style.display = 'flex';
+        this.node.style.flexDirection = 'column';
     }
 
     public async setUri(uri: URI): Promise<void> {
@@ -116,8 +102,18 @@ export class MarkdownEditorWidget extends ReactWidget implements Saveable, Savea
     }
 
     public toggleMode(): void {
-        this.mode = this.mode === 'preview' ? 'source' : 'preview';
+        // Fix: Force a complete unmount/remount cycle to ensure clean editor initialization
+        // This resolves issues where heavy components (TipTap/Monaco) fail to render correctly
+        // when switched synchronously.
+        this.isSwitching = true;
         this.update();
+
+        // Use setTimeout to allow the 'switching' render cycle to complete (clearing the DOM)
+        setTimeout(() => {
+            this.mode = this.mode === 'preview' ? 'source' : 'preview';
+            this.isSwitching = false;
+            this.update();
+        }, 50);
     }
 
     public getMode(): 'preview' | 'source' {
@@ -177,6 +173,40 @@ export class MarkdownEditorWidget extends ReactWidget implements Saveable, Savea
         }
     };
 
+    /**
+     * Request wiki link target from user using Theia's QuickInputService
+     * Returns undefined if user cancels
+     */
+    protected requestWikiLinkTarget = async (): Promise<string | undefined> => {
+        const result = await this.quickInputService.input({
+            placeHolder: nls.localize('quallaa/wikiLink/placeholder', 'Enter note name...'),
+            prompt: nls.localize('quallaa/wikiLink/prompt', 'Wiki Link Target'),
+        });
+        return result;
+    };
+
+    /**
+     * Resolve image path relative to current document
+     * Converts relative paths to file:// URLs
+     */
+    protected resolveImagePath = (imagePath: string): string => {
+        // If already an absolute URL, return as-is
+        if (imagePath.startsWith('http://') || imagePath.startsWith('https://') || imagePath.startsWith('file://')) {
+            return imagePath;
+        }
+
+        // Get the directory of the current document
+        if (!this.uri) {
+            return imagePath;
+        }
+
+        const documentDir = this.uri.parent;
+        const resolvedUri = documentDir.resolve(imagePath);
+
+        // Convert to file:// URL
+        return resolvedUri.toString();
+    };
+
     async save(): Promise<void> {
         if (!this.uri || !this.dirty) {
             return;
@@ -216,6 +246,7 @@ export class MarkdownEditorWidget extends ReactWidget implements Saveable, Savea
                     <button
                         className='theia-button secondary'
                         onClick={() => this.toggleMode()}
+                        disabled={this.isSwitching}
                         style={{
                             display: 'flex',
                             alignItems: 'center',
@@ -232,19 +263,48 @@ export class MarkdownEditorWidget extends ReactWidget implements Saveable, Savea
                     </span>
                 </div>
 
-                {/* Content Area */}
-                <div style={{ flex: 1, overflow: 'hidden' }}>
-                    {this.mode === 'preview' ? (
+                {/* Content Area - key forces React to re-render on mode change */}
+                <div key={this.mode} style={{ flex: 1, overflow: 'hidden' }}>
+                    {this.isSwitching ? (
+                        <div style={{
+                            height: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'var(--theia-descriptionForeground)'
+                        }}>
+                            Switching mode...
+                        </div>
+                    ) : this.mode === 'preview' ? (
                         <TipTapRenderer
                             content={this.content}
                             onChange={this.handleContentChange}
                             onWikiLinkClick={this.handleWikiLinkClick}
+                            onRequestLinkTarget={this.requestWikiLinkTarget}
+                            searchNotes={query => this.knowledgeBaseService.searchNotes(query)}
+                            resolveImagePath={this.resolveImagePath}
                         />
                     ) : (
-                        <SourceEditor
-                            content={this.content}
-                            onChange={this.handleContentChange}
-                        />
+                        <div className="quallaa-monaco-source-editor" style={{ width: '100%', height: '100%' }}>
+                            <textarea
+                                value={this.content}
+                                onChange={e => this.handleContentChange(e.target.value)}
+                                style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    padding: '16px',
+                                    border: 'none',
+                                    resize: 'none',
+                                    fontFamily: 'var(--monaco-monospace-font, monospace)',
+                                    fontSize: '14px',
+                                    lineHeight: '22px',
+                                    backgroundColor: 'var(--theia-editor-background)',
+                                    color: 'var(--theia-editor-foreground)',
+                                    outline: 'none',
+                                }}
+                                spellCheck={false}
+                            />
+                        </div>
                     )}
                 </div>
             </div>

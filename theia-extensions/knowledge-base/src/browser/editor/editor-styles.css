@@ -194,3 +194,83 @@
     outline: none;
     box-shadow: 0 0 0 2px var(--theia-focusBorder, #007acc);
 }
+
+/* Wiki Link Suggestion Dropdown */
+.quallaa-suggestion-container {
+    background-color: var(--theia-editorSuggestWidget-background, #252526);
+    border: 1px solid var(--theia-editorSuggestWidget-border, #454545);
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    min-width: 220px;
+    max-width: 400px;
+}
+
+.quallaa-suggestion-list {
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 4px 0;
+}
+
+.quallaa-suggestion-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 6px 12px;
+    border: none;
+    background: transparent;
+    color: var(--theia-editorSuggestWidget-foreground, #bbbbbb);
+    text-align: left;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: var(--theia-ui-font-family);
+    transition: background-color 0.1s ease;
+}
+
+.quallaa-suggestion-item:hover,
+.quallaa-suggestion-item.is-selected {
+    background-color: var(--theia-editorSuggestWidget-selectedBackground, #062f4a);
+    color: var(--theia-editorSuggestWidget-highlightForeground, #18a3ff);
+}
+
+.quallaa-suggestion-item:focus {
+    outline: none;
+}
+
+.quallaa-suggestion-empty {
+    padding: 8px 12px;
+    color: var(--kb-text-muted);
+    font-style: italic;
+    font-size: 12px;
+}
+
+/* Tippy.js theme for suggestions */
+.tippy-box[data-theme~='quallaa-suggestion'] {
+    background-color: transparent;
+    padding: 0;
+}
+
+.tippy-box[data-theme~='quallaa-suggestion'] > .tippy-content {
+    padding: 0;
+}
+
+.tippy-box[data-theme~='quallaa-suggestion'] > .tippy-arrow {
+    display: none;
+}
+
+/* Wiki Image Styling */
+.ProseMirror figure[data-wiki-image] {
+    margin: 1em 0;
+    text-align: center;
+}
+
+.ProseMirror figure[data-wiki-image] img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.ProseMirror figure[data-wiki-image]:hover img {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}

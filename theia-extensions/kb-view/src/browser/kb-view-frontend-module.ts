@@ -24,9 +24,11 @@
  * - Bind to CommandContribution/MenuContribution for command registration
  */
 
+import '../../src/browser/style/ribbon.css';
+
 import { ContainerModule } from '@theia/core/shared/inversify';
 import { CommandContribution, MenuContribution, PreferenceContribution } from '@theia/core/lib/common';
-import { FrontendApplicationContribution } from '@theia/core/lib/browser';
+import { FrontendApplicationContribution, WidgetFactory } from '@theia/core/lib/browser';
 import { LabelProviderContribution } from '@theia/core/lib/browser/label-provider';
 
 // Core services
@@ -48,6 +50,9 @@ import { KBViewCustomizationService } from './kb-view-customization-service';
 // Main contribution and preferences
 import { KBViewContribution } from './kb-view-contribution';
 import { KB_VIEW_PREFERENCES_SCHEMA } from './kb-view-preferences';
+
+// Widgets
+import { RibbonWidget, RIBBON_WIDGET_ID } from './ribbon-widget';
 
 export default new ContainerModule(bind => {
     console.log('[KB-VIEW] Frontend module loading...');
@@ -84,6 +89,15 @@ export default new ContainerModule(bind => {
     // Command and menu filtering contributions
     bind(CommandContribution).toService(KBViewCommandFilter);
     bind(MenuContribution).toService(KBViewMenuFilter);
+
+    // Ribbon widget
+    bind(RibbonWidget).toSelf();
+    bind(WidgetFactory)
+        .toDynamicValue(ctx => ({
+            id: RIBBON_WIDGET_ID,
+            createWidget: () => ctx.container.get<RibbonWidget>(RibbonWidget),
+        }))
+        .inSingletonScope();
 
     console.log('[KB-VIEW] Frontend module loaded successfully');
 });

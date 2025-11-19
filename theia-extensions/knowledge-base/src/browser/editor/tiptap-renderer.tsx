@@ -19,15 +19,19 @@ import { useEditor, EditorContent, Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { defaultMarkdownParser, defaultMarkdownSerializer } from 'prosemirror-markdown';
 import { WikiLink, serializeWikiLinkToMarkdown } from './tiptap-wiki-link';
+import { WikiImage } from './tiptap-wiki-image';
+import { createWikiLinkSuggestion } from './wiki-link-suggestion';
+import { Note } from '../../common/knowledge-base-protocol';
 
 // Formatting toolbar component
 interface ToolbarProps {
     editor: Editor | null;
+    onRequestLinkTarget?: () => Promise<string | undefined>;
 }
 
-const FormattingToolbar: React.FC<ToolbarProps> = ({ editor }) => {
+const FormattingToolbar: React.FC<ToolbarProps> = ({ editor, onRequestLinkTarget }) => {
     if (!editor) {
-        return undefined;
+        return <></>;
     }
 
     const ToolbarButton: React.FC<{
@@ -125,10 +129,18 @@ const FormattingToolbar: React.FC<ToolbarProps> = ({ editor }) => {
             <div className="toolbar-separator" />
             <div className="toolbar-group">
                 <ToolbarButton
-                    onClick={() => {
-                        const target = window.prompt('Enter link target (note name):');
-                        if (target) {
-                            editor.chain().focus().insertWikiLink(target).run();
+                    onClick={async () => {
+                        if (onRequestLinkTarget) {
+                            const target = await onRequestLinkTarget();
+                            if (target) {
+                                editor.chain().focus().insertWikiLink(target).run();
+                            }
+                        } else {
+                            // Fallback to window.prompt if no callback provided
+                            const target = window.prompt('Enter link target (note name):');
+                            if (target) {
+                                editor.chain().focus().insertWikiLink(target).run();
+                            }
                         }
                     }}
                     title="Insert Wiki Link (Cmd+Shift+K)"
@@ -156,6 +168,12 @@ export interface TipTapRendererProps {
     onEditorReady?: (editor: Editor) => void;
     /** Called when a wiki link is clicked */
     onWikiLinkClick?: (target: string) => void;
+    /** Called to request a wiki link target from user (replaces window.prompt) */
+    onRequestLinkTarget?: () => Promise<string | undefined>;
+    /** Function to search notes for autocomplete */
+    searchNotes?: (query: string) => Promise<Note[]>;
+    /** Function to resolve image paths to URLs */
+    resolveImagePath?: (path: string) => string;
 }
 
 export const TipTapRenderer: React.FC<TipTapRendererProps> = ({
@@ -163,7 +181,10 @@ export const TipTapRenderer: React.FC<TipTapRendererProps> = ({
     onChange,
     readOnly = false,
     onEditorReady,
-    onWikiLinkClick
+    onWikiLinkClick,
+    onRequestLinkTarget,
+    searchNotes,
+    resolveImagePath
 }) => {
     // Store extracted wiki links during parsing
     const wikiLinksRef = React.useRef<Array<{ target: string; displayText?: string }>>([]);
@@ -306,11 +327,22 @@ export const TipTapRenderer: React.FC<TipTapRendererProps> = ({
         return restoreWikiLinks(json);
     };
 
+    // Create suggestion configuration if searchNotes is provided
+    const suggestionConfig = React.useMemo(
+        () => searchNotes ? createWikiLinkSuggestion(searchNotes) : undefined,
+        [searchNotes]
+    );
+
     const editor = useEditor({
         extensions: [
             StarterKit,
             WikiLink.configure({
                 onLinkClick: onWikiLinkClick,
+                onRequestLinkTarget: onRequestLinkTarget,
+                suggestion: suggestionConfig,
+            }),
+            WikiImage.configure({
+                resolveImagePath: resolveImagePath,
             }),
         ],
         // Parse markdown content to ProseMirror document
@@ -349,11 +381,12 @@ export const TipTapRenderer: React.FC<TipTapRendererProps> = ({
                 }
             }
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [content, editor]);
 
     return (
         <div className='quallaa-editor-container'>
-            <FormattingToolbar editor={editor} />
+            <FormattingToolbar editor={editor} onRequestLinkTarget={onRequestLinkTarget} />
             <div className='quallaa-tiptap-editor'>
                 <EditorContent editor={editor} />
             </div>
