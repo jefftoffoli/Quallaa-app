@@ -20,6 +20,7 @@ import { ReactWidget } from '@theia/core/lib/browser/widgets/react-widget';
 import { Saveable, SaveableSource } from '@theia/core/lib/browser/saveable';
 import { URI } from '@theia/core/lib/common/uri';
 import { TipTapRenderer } from './tiptap-renderer';
+import { MonacoSourceEditor } from './monaco-source-editor';
 import { MessageService, Emitter, Event, nls } from '@theia/core';
 import { Widget, OpenerService } from '@theia/core/lib/browser';
 import { FileService } from '@theia/filesystem/lib/browser/file-service';
@@ -28,7 +29,6 @@ import { QuickInputService } from '@theia/core/lib/browser/quick-input';
 
 @injectable()
 export class MarkdownEditorWidget extends ReactWidget implements Saveable, SaveableSource {
-
     static readonly ID = 'quallaa-markdown-editor';
     static readonly LABEL = 'Markdown Editor';
 
@@ -242,9 +242,9 @@ export class MarkdownEditorWidget extends ReactWidget implements Saveable, Savea
         return (
             <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                 {/* Toolbar with mode toggle */}
-                <div className='quallaa-editor-toolbar'>
+                <div className="quallaa-editor-toolbar">
                     <button
-                        className='theia-button secondary'
+                        className="theia-button secondary"
                         onClick={() => this.toggleMode()}
                         disabled={this.isSwitching}
                         style={{
@@ -258,21 +258,21 @@ export class MarkdownEditorWidget extends ReactWidget implements Saveable, Savea
                         <i className={`codicon ${this.mode === 'preview' ? 'codicon-code' : 'codicon-book'}`}></i>
                         {this.mode === 'preview' ? 'Source' : 'Preview'}
                     </button>
-                    <span style={{ fontSize: '11px', color: 'var(--kb-text-muted)', marginLeft: 'auto' }}>
-                        {this.mode === 'preview' ? 'Live Preview' : 'Source Mode'}
-                    </span>
+                    <span style={{ fontSize: '11px', color: 'var(--kb-text-muted)', marginLeft: 'auto' }}>{this.mode === 'preview' ? 'Live Preview' : 'Source Mode'}</span>
                 </div>
 
                 {/* Content Area - key forces React to re-render on mode change */}
                 <div key={this.mode} style={{ flex: 1, overflow: 'hidden' }}>
                     {this.isSwitching ? (
-                        <div style={{
-                            height: '100%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: 'var(--theia-descriptionForeground)'
-                        }}>
+                        <div
+                            style={{
+                                height: '100%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: 'var(--theia-descriptionForeground)',
+                            }}
+                        >
                             Switching mode...
                         </div>
                     ) : this.mode === 'preview' ? (
@@ -285,26 +285,7 @@ export class MarkdownEditorWidget extends ReactWidget implements Saveable, Savea
                             resolveImagePath={this.resolveImagePath}
                         />
                     ) : (
-                        <div className="quallaa-monaco-source-editor" style={{ width: '100%', height: '100%' }}>
-                            <textarea
-                                value={this.content}
-                                onChange={e => this.handleContentChange(e.target.value)}
-                                style={{
-                                    width: '100%',
-                                    height: '100%',
-                                    padding: '16px',
-                                    border: 'none',
-                                    resize: 'none',
-                                    fontFamily: 'var(--monaco-monospace-font, monospace)',
-                                    fontSize: '14px',
-                                    lineHeight: '22px',
-                                    backgroundColor: 'var(--theia-editor-background)',
-                                    color: 'var(--theia-editor-foreground)',
-                                    outline: 'none',
-                                }}
-                                spellCheck={false}
-                            />
-                        </div>
+                        <MonacoSourceEditor content={this.content} onChange={this.handleContentChange} />
                     )}
                 </div>
             </div>

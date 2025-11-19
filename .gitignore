@@ -11,8 +11,8 @@
 *.log
 license-check-summary.txt*
 
-# Private planning and strategy docs
-knowledge-base/
+# Private planning and strategy docs (root level only, not theia-extensions/knowledge-base/)
+/knowledge-base/
 
 # Playwright test artifacts
 test-results/
