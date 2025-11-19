@@ -230,10 +230,7 @@ test.describe('Switching Between Visual and Source Modes', () => {
         expect(isSourcePresent).toBe(true);
     });
 
-    // TODO: Tab selector needs investigation
-    // Issue: Cannot find .p-TabBar-tab.p-mod-current .p-TabBar-tabLabel
-    // The selector may need to be updated for current Theia tab structure
-    test.skip('Dirty indicator shows unsaved work in both modes', async ({ page }) => {
+    test('Dirty indicator shows unsaved work in both modes', async ({ page }) => {
         // Scenario: I need to know if I have unsaved changes before closing
 
         await openMarkdownFile(page);
@@ -241,17 +238,20 @@ test.describe('Switching Between Visual and Source Modes', () => {
         await editor.click();
 
         // Check tab doesn't show dirty indicator initially
-        const tab = page.locator('.p-TabBar-tab.p-mod-current .p-TabBar-tabLabel');
-        let tabTitle = await tab.textContent();
-        expect(tabTitle).not.toContain('•');
+        // Note: Theia uses Lumino (lm- prefix), not Phosphor (p- prefix)
+        // Dirty state is indicated by theia-mod-dirty class, not text content
+        // Target the editor tab specifically (in main area, not sidebar tabs)
+        const tab = page.locator('#shell-tab-quallaa-markdown-editor');
+        const hasDirtyInitially = await tab.evaluate(el => el.classList.contains('theia-mod-dirty'));
+        expect(hasDirtyInitially).toBe(false);
 
         // Make a change
         await page.keyboard.type('Unsaved change');
         await page.waitForTimeout(500);
 
-        // Now I should see the dirty indicator
-        tabTitle = await tab.textContent();
-        expect(tabTitle).toContain('•');
+        // Now I should see the dirty indicator class
+        const hasDirtyAfterEdit = await tab.evaluate(el => el.classList.contains('theia-mod-dirty'));
+        expect(hasDirtyAfterEdit).toBe(true);
 
         await page.screenshot({ path: 'screenshots/ux-dirty-indicator-warns-me.png' });
 
@@ -417,10 +417,7 @@ test.describe('Complete Writing Session', () => {
         await waitForAppReady(page);
     });
 
-    // TODO: Tab selector needs investigation
-    // Issue: Cannot find .p-TabBar-tab.p-mod-current .p-TabBar-tabLabel
-    // The selector may need to be updated for current Theia tab structure
-    test.skip('Full writing workflow: create content, link notes, format, save', async ({ page }) => {
+    test('Full writing workflow: create content, link notes, format, save', async ({ page }) => {
         // This is what a real session looks like
 
         await openMarkdownFile(page);
@@ -459,7 +456,10 @@ test.describe('Complete Writing Session', () => {
         // Check to source mode to see the markdown
         const toggleButton = page.locator('.quallaa-editor-toolbar button.theia-button');
         await toggleButton.click();
-        await page.waitForTimeout(2000);
+
+        // Wait for mode toggle to complete
+        const sourceEditor = page.locator('.quallaa-monaco-source-editor');
+        await sourceEditor.waitFor({ state: 'visible', timeout: 10000 });
 
         await page.screenshot({ path: 'screenshots/ux-session-markdown-output.png' });
 
@@ -468,11 +468,15 @@ test.describe('Complete Writing Session', () => {
         await page.waitForTimeout(1000);
 
         // Verify save succeeded (no dirty indicator)
-        const tab = page.locator('.p-TabBar-tab.p-mod-current .p-TabBar-tabLabel');
-        const tabTitle = await tab.textContent();
+        // Note: Theia uses Lumino (lm- prefix), dirty state is theia-mod-dirty class
+        // Target the editor tab specifically (not sidebar tabs)
+        const tab = page.locator('#shell-tab-quallaa-markdown-editor');
+        const isDirtyAfterSave = await tab.evaluate(el => el.classList.contains('theia-mod-dirty'));
 
         await page.screenshot({ path: 'screenshots/ux-session-saved.png' });
 
-        console.log('Session completed. Tab title:', tabTitle);
+        // After save, dirty indicator should be gone
+        expect(isDirtyAfterSave).toBe(false);
+        console.log('Session completed. Dirty after save:', isDirtyAfterSave);
     });
 });
