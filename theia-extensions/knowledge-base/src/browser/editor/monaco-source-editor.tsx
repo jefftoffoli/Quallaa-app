@@ -32,7 +32,8 @@ export interface MonacoSourceEditorProps {
  * Provides syntax highlighting, line numbers, and a consistent editing experience.
  */
 export const MonacoSourceEditor: React.FC<MonacoSourceEditorProps> = ({ content, onChange, readOnly = false }) => {
-    const containerRef = React.useRef<HTMLDivElement | undefined>(undefined);
+    // eslint-disable-next-line no-null/no-null
+    const containerRef = React.useRef<HTMLDivElement>(null);
     const editorRef = React.useRef<monaco.editor.IStandaloneCodeEditor | undefined>(undefined);
     const isUpdatingRef = React.useRef(false);
 

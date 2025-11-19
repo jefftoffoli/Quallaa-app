@@ -75,7 +75,9 @@ export class MarkdownEditorWidget extends ReactWidget implements Saveable, Savea
 
     @postConstruct()
     protected init(): void {
-        this.id = MarkdownEditorWidget.ID;
+        // Note: Do NOT set this.id here - the widget manager assigns a unique ID
+        // based on factory ID + options (e.g., 'quallaa-markdown-editor:uri=file:///path/file.md')
+        // Overriding it would cause all markdown editors to share the same ID
         this.title.label = MarkdownEditorWidget.LABEL;
         this.title.caption = MarkdownEditorWidget.LABEL;
         this.title.closable = true;

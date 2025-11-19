@@ -3601,6 +3601,26 @@
   resolved "https://registry.yarnpkg.com/@tiptap/extension-strike/-/extension-strike-3.10.8.tgz#4093506baf3e201571fb13bbb8a583bad5742109"
   integrity sha512-Qp07IdioE4uZK6AnpuAuniIKNdByRHKu7Yt8XK3MDfIicQ0bGjZWFglVay5HYzL83MGHGQLaTCdoCQqbIKjCmw==
 
+"@tiptap/extension-table-cell@^3.10.8":
+  version "3.11.0"
+  resolved "https://registry.yarnpkg.com/@tiptap/extension-table-cell/-/extension-table-cell-3.11.0.tgz#1a5e5661bdb1349480d632c2595b68c6110c22f4"
+  integrity sha512-ZjL0CU+T3rQ9B1EN8LE4N8eiBTEQlBQehqdsBVzvRR7o7RlYp4JE90vfPsztOmnsqr2dWnsNNhtpWc0+wOLPug==
+
+"@tiptap/extension-table-header@^3.10.8":
+  version "3.11.0"
+  resolved "https://registry.yarnpkg.com/@tiptap/extension-table-header/-/extension-table-header-3.11.0.tgz#aa88171c01c8150590d154879b10760deae32f50"
+  integrity sha512-LJ3Yu7mZKXdoaV3ixjfpcjgC1ab63h2KYFS3bLOmlRqnacmUfFaY0JaHEFAGmywLCVi26YQ5Y9JodadJsgfnIw==
+
+"@tiptap/extension-table-row@^3.10.8":
+  version "3.11.0"
+  resolved "https://registry.yarnpkg.com/@tiptap/extension-table-row/-/extension-table-row-3.11.0.tgz#4f9e895a57a9f222710db01d0b3cfdf810bd7316"
+  integrity sha512-IwN3jiqkpgDnt2kuNf0hn3qM1qSitP3UIl/anxj1gt/OKRzEjNLuHEDr7wmmjMenj5Bhq+q+MpageKZERJzhaQ==
+
+"@tiptap/extension-table@^3.10.8":
+  version "3.11.0"
+  resolved "https://registry.yarnpkg.com/@tiptap/extension-table/-/extension-table-3.11.0.tgz#9725b077721adbe2a1151e53e3a990426aab26f7"
+  integrity sha512-2yIj3gKkl0nrw20BKHMrGiUvQO9OK3DAu6UWm06Os9+Sdqiq38Or9YBJRpCfHs9SmXnGBbGUuBW1dnNB7/sZUw==
+
 "@tiptap/extension-text@^3.10.8":
   version "3.10.8"
   resolved "https://registry.yarnpkg.com/@tiptap/extension-text/-/extension-text-3.10.8.tgz#b0bffab8e485936e175d27ec6560c9478f835ca9"
