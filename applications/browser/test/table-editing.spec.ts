@@ -8,35 +8,34 @@
  * 2. Needs to add content and manipulate the table structure
  * 3. Expects tables to work in both Preview and Source modes
  * 4. Wants their work to persist across saves
+ *
+ * TODO: This test needs proper workspace setup to create notes.
+ * Current blocker: App loads without workspace, preventing note creation.
+ * See: playwright.config.ts webServer command for workspace configuration.
  */
 
 import { test, expect } from '@playwright/test';
 
 test.describe('Table Editing - User Journey', () => {
     test.beforeEach(async ({ page }) => {
-        // Capture console output for debugging
-        page.on('console', msg => console.log('BROWSER:', msg.type(), msg.text()));
-        page.on('pageerror', error => console.log('PAGE ERROR:', error.message));
-
         // Navigate to the application
         await page.goto('http://localhost:3000');
 
         // Wait for the application to be ready
-        await page.waitForSelector('.theia-ApplicationShell', { timeout: 60000 });
+        await page.waitForSelector('.theia-ApplicationShell', { timeout: 30000 });
 
-        // Give the application time to initialize
-        await page.waitForTimeout(3000);
+        // Give the application time to initialize and become interactive
+        await page.waitForTimeout(4000);
 
-        // Create a new test file
-        await page.keyboard.press('Meta+Shift+p');
-        await page.waitForSelector('.monaco-quick-input-box input', { timeout: 5000 });
-        await page.fill('.monaco-quick-input-box input', 'New File');
-        await page.waitForSelector('.monaco-list-row', { state: 'visible', timeout: 2000 });
-        await page.keyboard.press('Enter');
+        // Create a new note using the Quick Actions button
+        const newNoteButton = page.locator('text=New Note from Template');
+        await newNoteButton.waitFor({ timeout: 10000 });
+        await newNoteButton.click();
 
-        // Wait for file dialog or input
-        await page.waitForSelector('.theia-input', { timeout: 5000 });
-        await page.fill('.theia-input', 'test-workspace/table-test.md');
+        // Wait for template selection dialog
+        await page.waitForTimeout(1000);
+
+        // Select "Blank Note" template (should be first option)
         await page.keyboard.press('Enter');
 
         // Wait for the markdown editor to open
