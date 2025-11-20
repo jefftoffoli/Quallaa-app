@@ -23,7 +23,6 @@ import { ApplicationShell } from '@theia/core/lib/browser';
 
 @injectable()
 export class MarkdownEditorOpenHandler implements OpenHandler {
-
     readonly id = 'quallaa-markdown-open-handler';
     readonly label = 'Quallaa Markdown Editor';
 
@@ -46,10 +45,19 @@ export class MarkdownEditorOpenHandler implements OpenHandler {
         const widgetOptions = { uri: uri.toString() };
 
         // Use widget manager to get or create
-        const widget = await this.widgetManager.getOrCreateWidget<MarkdownEditorWidget>(
-            MarkdownEditorWidget.ID,
-            widgetOptions
-        );
+        const widget = await this.widgetManager.getOrCreateWidget<MarkdownEditorWidget>(MarkdownEditorWidget.ID, widgetOptions);
+
+        // Ensure widget has a valid ID before adding to shell
+        // The widget manager should assign this, but we verify it exists
+        if (!widget.id || widget.id === '') {
+            // Fallback: create unique ID from factory ID and URI
+            const encodedUri = encodeURIComponent(uri.toString());
+            Object.defineProperty(widget, 'id', {
+                value: `${MarkdownEditorWidget.ID}:${encodedUri}`,
+                writable: true,
+                configurable: true,
+            });
+        }
 
         if (MarkdownEditorWidget.is(widget)) {
             await widget.setUri(uri);
