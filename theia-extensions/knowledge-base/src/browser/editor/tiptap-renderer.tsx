@@ -115,6 +115,27 @@ const FormattingToolbar: React.FC<ToolbarProps> = ({ editor, onRequestLinkTarget
                 />
                 <ToolbarButton onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} title="Insert Table" icon="symbol-array" />
             </div>
+            {/* Table manipulation buttons - only show when cursor is in a table */}
+            {editor.isActive('table') && (
+                <>
+                    <div className="toolbar-separator" />
+                    <div className="toolbar-group">
+                        <ToolbarButton onClick={() => editor.chain().focus().addColumnBefore().run()} title="Add Column Before" icon="arrow-left" />
+                        <ToolbarButton onClick={() => editor.chain().focus().addColumnAfter().run()} title="Add Column After" icon="arrow-right" />
+                        <ToolbarButton onClick={() => editor.chain().focus().deleteColumn().run()} title="Delete Column" icon="close" />
+                    </div>
+                    <div className="toolbar-separator" />
+                    <div className="toolbar-group">
+                        <ToolbarButton onClick={() => editor.chain().focus().addRowBefore().run()} title="Add Row Before" icon="arrow-up" />
+                        <ToolbarButton onClick={() => editor.chain().focus().addRowAfter().run()} title="Add Row After" icon="arrow-down" />
+                        <ToolbarButton onClick={() => editor.chain().focus().deleteRow().run()} title="Delete Row" icon="trash" />
+                    </div>
+                    <div className="toolbar-separator" />
+                    <div className="toolbar-group">
+                        <ToolbarButton onClick={() => editor.chain().focus().deleteTable().run()} title="Delete Table" icon="symbol-array" />
+                    </div>
+                </>
+            )}
         </div>
     );
 };
