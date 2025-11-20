@@ -56,6 +56,13 @@ export class MarkdownEditorWidget extends ReactWidget implements Saveable, Savea
     // Fix: Add switching state to force clean unmount/remount
     protected isSwitching: boolean = false;
 
+    // Refs to extract content and scroll position from editors before switching modes
+    protected tiptapEditorRef = React.createRef<{ getContent: () => string; getScrollPercentage: () => number; setScrollPercentage: (percentage: number) => void }>();
+    protected monacoEditorRef = React.createRef<{ getContent: () => string; getScrollPercentage: () => number; setScrollPercentage: (percentage: number) => void }>();
+
+    // Store scroll position when switching modes
+    protected savedScrollPercentage: number = 0;
+
     // Saveable implementation
     readonly autoSave: 'off' | 'afterDelay' | 'onFocusChange' | 'onWindowChange' = 'off';
 
@@ -104,7 +111,17 @@ export class MarkdownEditorWidget extends ReactWidget implements Saveable, Savea
     }
 
     public toggleMode(): void {
-        // Fix: Force a complete unmount/remount cycle to ensure clean editor initialization
+        // CRITICAL: Extract current content and scroll position from active editor BEFORE unmounting
+        // This prevents data loss and maintains user's reading position
+        if (this.mode === 'preview' && this.tiptapEditorRef.current) {
+            this.content = this.tiptapEditorRef.current.getContent();
+            this.savedScrollPercentage = this.tiptapEditorRef.current.getScrollPercentage();
+        } else if (this.mode === 'source' && this.monacoEditorRef.current) {
+            this.content = this.monacoEditorRef.current.getContent();
+            this.savedScrollPercentage = this.monacoEditorRef.current.getScrollPercentage();
+        }
+
+        // Force a complete unmount/remount cycle to ensure clean editor initialization
         // This resolves issues where heavy components (TipTap/Monaco) fail to render correctly
         // when switched synchronously.
         this.isSwitching = true;
@@ -115,7 +132,21 @@ export class MarkdownEditorWidget extends ReactWidget implements Saveable, Savea
             this.mode = this.mode === 'preview' ? 'source' : 'preview';
             this.isSwitching = false;
             this.update();
+
+            // Restore scroll position after new editor has mounted
+            this.restoreScrollPosition();
         }, 50);
+    }
+
+    protected restoreScrollPosition(): void {
+        // Wait for the editor to fully render before restoring scroll
+        setTimeout(() => {
+            if (this.mode === 'preview' && this.tiptapEditorRef.current) {
+                this.tiptapEditorRef.current.setScrollPercentage(this.savedScrollPercentage);
+            } else if (this.mode === 'source' && this.monacoEditorRef.current) {
+                this.monacoEditorRef.current.setScrollPercentage(this.savedScrollPercentage);
+            }
+        }, 150);
     }
 
     public getMode(): 'preview' | 'source' {
@@ -285,9 +316,32 @@ export class MarkdownEditorWidget extends ReactWidget implements Saveable, Savea
                             onRequestLinkTarget={this.requestWikiLinkTarget}
                             searchNotes={query => this.knowledgeBaseService.searchNotes(query)}
                             resolveImagePath={this.resolveImagePath}
+                            editorRef={
+                                this.tiptapEditorRef as React.MutableRefObject<
+                                    | {
+                                          getContent: () => string;
+                                          getScrollPercentage: () => number;
+                                          setScrollPercentage: (percentage: number) => void;
+                                      }
+                                    | undefined
+                                >
+                            }
                         />
                     ) : (
-                        <MonacoSourceEditor content={this.content} onChange={this.handleContentChange} />
+                        <MonacoSourceEditor
+                            content={this.content}
+                            onChange={this.handleContentChange}
+                            editorRef={
+                                this.monacoEditorRef as React.MutableRefObject<
+                                    | {
+                                          getContent: () => string;
+                                          getScrollPercentage: () => number;
+                                          setScrollPercentage: (percentage: number) => void;
+                                      }
+                                    | undefined
+                                >
+                            }
+                        />
                     )}
                 </div>
             </div>

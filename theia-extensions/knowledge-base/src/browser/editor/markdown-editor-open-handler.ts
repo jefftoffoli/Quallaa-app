@@ -45,18 +45,8 @@ export class MarkdownEditorOpenHandler implements OpenHandler {
         const widgetOptions = { uri: uri.toString() };
 
         // Use widget manager to get or create
+        // The widget manager automatically assigns a unique ID based on factory ID + options
         const widget = await this.widgetManager.getOrCreateWidget<MarkdownEditorWidget>(MarkdownEditorWidget.ID, widgetOptions);
-
-        // Ensure widget has a valid ID before adding to shell
-        // The widget manager should assign this, but we verify it exists
-        if (!widget.id || widget.id === '') {
-            // Fallback: use the factory ID (tab selectors expect this exact ID)
-            Object.defineProperty(widget, 'id', {
-                value: MarkdownEditorWidget.ID,
-                writable: true,
-                configurable: true,
-            });
-        }
 
         if (MarkdownEditorWidget.is(widget)) {
             await widget.setUri(uri);

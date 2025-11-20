@@ -35,14 +35,14 @@ test.describe('KB View Mode Switching', () => {
         // Type the command
         await page.fill('.monaco-quick-input-box input', 'Switch to KB View Mode');
 
-        // Wait a bit for filtering
-        await page.waitForTimeout(500);
+        // Wait for command to appear in list
+        await page.waitForSelector('.monaco-list-row', { state: 'visible', timeout: 2000 });
 
         // Press Enter to execute command
         await page.keyboard.press('Enter');
 
-        // Wait for mode switch to complete
-        await page.waitForTimeout(1000);
+        // Wait for mode switch to complete by waiting for body class change
+        await page.waitForSelector('body.kb-view-mode', { timeout: 5000 });
 
         // Check that body has kb-view-mode class
         const body = await page.locator('body');
@@ -64,9 +64,9 @@ test.describe('KB View Mode Switching', () => {
         await page.keyboard.press('Meta+Shift+p');
         await page.waitForSelector('.monaco-quick-input-box input', { timeout: 5000 });
         await page.fill('.monaco-quick-input-box input', 'Toggle KB View');
-        await page.waitForTimeout(500);
+        await page.waitForSelector('.monaco-list-row', { state: 'visible', timeout: 2000 });
         await page.keyboard.press('Enter');
-        await page.waitForTimeout(1000);
+        await page.waitForSelector('body.kb-view-mode', { timeout: 5000 });
 
         // Check that we're now in KB View mode
         let hasKBViewMode = await body.evaluate(el => el.classList.contains('kb-view-mode'));
@@ -77,9 +77,9 @@ test.describe('KB View Mode Switching', () => {
         await page.keyboard.press('Meta+Shift+p');
         await page.waitForSelector('.monaco-quick-input-box input', { timeout: 5000 });
         await page.fill('.monaco-quick-input-box input', 'Toggle KB View');
-        await page.waitForTimeout(500);
+        await page.waitForSelector('.monaco-list-row', { state: 'visible', timeout: 2000 });
         await page.keyboard.press('Enter');
-        await page.waitForTimeout(1000);
+        await page.waitForSelector('body.developer-mode', { timeout: 5000 });
 
         // Check that we're back in Developer mode
         hasDevMode = await body.evaluate(el => el.classList.contains('developer-mode'));
@@ -94,9 +94,9 @@ test.describe('KB View Mode Switching', () => {
         await page.keyboard.press('Meta+Shift+p');
         await page.waitForSelector('.monaco-quick-input-box input', { timeout: 5000 });
         await page.fill('.monaco-quick-input-box input', 'Switch to KB View Mode');
-        await page.waitForTimeout(500);
+        await page.waitForSelector('.monaco-list-row', { state: 'visible', timeout: 2000 });
         await page.keyboard.press('Enter');
-        await page.waitForTimeout(1000);
+        await page.waitForSelector('body.kb-view-mode', { timeout: 5000 });
 
         // Verify we're in KB View mode
         let body = await page.locator('body');
@@ -107,7 +107,8 @@ test.describe('KB View Mode Switching', () => {
         // Reload the page
         await page.reload();
         await page.waitForSelector('.theia-ApplicationShell', { timeout: 30000 });
-        await page.waitForTimeout(2000);
+        // Wait for KB View mode to be restored after reload
+        await page.waitForSelector('body.kb-view-mode', { timeout: 10000 });
 
         // Check that we're still in KB View mode after reload
         body = await page.locator('body');
@@ -119,9 +120,9 @@ test.describe('KB View Mode Switching', () => {
         await page.keyboard.press('Meta+Shift+p');
         await page.waitForSelector('.monaco-quick-input-box input', { timeout: 5000 });
         await page.fill('.monaco-quick-input-box input', 'Switch to Developer Mode');
-        await page.waitForTimeout(500);
+        await page.waitForSelector('.monaco-list-row', { state: 'visible', timeout: 2000 });
         await page.keyboard.press('Enter');
-        await page.waitForTimeout(1000);
+        await page.waitForSelector('body.developer-mode', { timeout: 5000 });
         console.log('✓ Cleaned up: switched back to Developer mode');
     });
 
@@ -130,15 +131,16 @@ test.describe('KB View Mode Switching', () => {
         await page.keyboard.press('Meta+Shift+p');
         await page.waitForSelector('.monaco-quick-input-box input', { timeout: 5000 });
         await page.fill('.monaco-quick-input-box input', 'Switch to KB View Mode');
-        await page.waitForTimeout(500);
+        await page.waitForSelector('.monaco-list-row', { state: 'visible', timeout: 2000 });
         await page.keyboard.press('Enter');
-        await page.waitForTimeout(1000);
+        await page.waitForSelector('body.kb-view-mode', { timeout: 5000 });
 
         // Try to execute "Switch to KB View Mode" again - it should be disabled
         await page.keyboard.press('Meta+Shift+p');
         await page.waitForSelector('.monaco-quick-input-box input', { timeout: 5000 });
         await page.fill('.monaco-quick-input-box input', 'Switch to KB View Mode');
-        await page.waitForTimeout(500);
+        // Wait for list to update after filtering
+        await page.waitForSelector('.monaco-list', { state: 'visible', timeout: 2000 });
 
         // Check if the command appears (it should be filtered out if context key works)
         const commandItems = await page.locator('.monaco-list-row').count();
@@ -151,8 +153,8 @@ test.describe('KB View Mode Switching', () => {
         await page.keyboard.press('Meta+Shift+p');
         await page.waitForSelector('.monaco-quick-input-box input', { timeout: 5000 });
         await page.fill('.monaco-quick-input-box input', 'Switch to Developer Mode');
-        await page.waitForTimeout(500);
+        await page.waitForSelector('.monaco-list-row', { state: 'visible', timeout: 2000 });
         await page.keyboard.press('Enter');
-        await page.waitForTimeout(1000);
+        await page.waitForSelector('body.developer-mode', { timeout: 5000 });
     });
 });

@@ -303,6 +303,8 @@ export interface TipTapRendererProps {
     searchNotes?: (query: string) => Promise<Note[]>;
     /** Function to resolve image paths to URLs */
     resolveImagePath?: (path: string) => string;
+    /** Ref to expose content extraction and scroll methods */
+    editorRef?: React.MutableRefObject<{ getContent: () => string; getScrollPercentage: () => number; setScrollPercentage: (percentage: number) => void } | undefined>;
 }
 
 export const TipTapRenderer: React.FC<TipTapRendererProps> = ({
@@ -314,9 +316,14 @@ export const TipTapRenderer: React.FC<TipTapRendererProps> = ({
     onRequestLinkTarget,
     searchNotes,
     resolveImagePath,
+    editorRef,
 }) => {
     // Store extracted wiki links during parsing
     const wikiLinksRef = React.useRef<Array<{ target: string; displayText?: string }>>([]);
+
+    // Ref to the scrollable container for scroll position tracking
+    // eslint-disable-next-line no-null/no-null
+    const containerRef = React.useRef<HTMLDivElement>(null);
 
     // Pre-process markdown to extract and protect wiki links
     const preprocessMarkdown = (markdown: string): string => {
@@ -672,6 +679,42 @@ export const TipTapRenderer: React.FC<TipTapRendererProps> = ({
         },
     });
 
+    // Expose content extraction and scroll methods via ref
+    React.useEffect(() => {
+        if (editor && editorRef) {
+            editorRef.current = {
+                getContent: () => serializeToMarkdown(editor.state.doc),
+                getScrollPercentage: () => {
+                    const container = containerRef.current;
+                    if (!container) {
+                        return 0;
+                    }
+                    const scrollableHeight = container.scrollHeight - container.clientHeight;
+                    if (scrollableHeight <= 0) {
+                        return 0;
+                    }
+                    return container.scrollTop / scrollableHeight;
+                },
+                setScrollPercentage: (percentage: number) => {
+                    const container = containerRef.current;
+                    if (!container) {
+                        return;
+                    }
+                    // Wait for content to render before setting scroll position
+                    setTimeout(() => {
+                        const scrollableHeight = container.scrollHeight - container.clientHeight;
+                        container.scrollTop = percentage * scrollableHeight;
+                    }, 100);
+                },
+            };
+        }
+        return () => {
+            if (editorRef) {
+                editorRef.current = undefined;
+            }
+        };
+    }, [editor, editorRef]);
+
     // Update content when prop changes (e.g., file reload or mode switch)
     // eslint-disable-next-line react-hooks/exhaustive-deps
     React.useEffect(() => {
@@ -692,7 +735,7 @@ export const TipTapRenderer: React.FC<TipTapRendererProps> = ({
     return (
         <div className="quallaa-editor-container">
             <FormattingToolbar editor={editor} onRequestLinkTarget={onRequestLinkTarget} />
-            <div className="quallaa-tiptap-editor">
+            <div className="quallaa-tiptap-editor" ref={containerRef}>
                 <EditorContent editor={editor} />
             </div>
         </div>

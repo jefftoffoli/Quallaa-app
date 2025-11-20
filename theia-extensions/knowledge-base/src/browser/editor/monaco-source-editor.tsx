@@ -25,13 +25,15 @@ export interface MonacoSourceEditorProps {
     onChange: (value: string) => void;
     /** Whether the editor is read-only */
     readOnly?: boolean;
+    /** Ref to expose content extraction and scroll methods */
+    editorRef?: React.MutableRefObject<{ getContent: () => string; getScrollPercentage: () => number; setScrollPercentage: (percentage: number) => void } | undefined>;
 }
 
 /**
  * Monaco-based source editor for markdown files.
  * Provides syntax highlighting, line numbers, and a consistent editing experience.
  */
-export const MonacoSourceEditor: React.FC<MonacoSourceEditorProps> = ({ content, onChange, readOnly = false }) => {
+export const MonacoSourceEditor: React.FC<MonacoSourceEditorProps> = ({ content, onChange, readOnly = false, editorRef: externalEditorRef }) => {
     // eslint-disable-next-line no-null/no-null
     const containerRef = React.useRef<HTMLDivElement>(null);
     const editorRef = React.useRef<monaco.editor.IStandaloneCodeEditor | undefined>(undefined);
@@ -88,6 +90,41 @@ export const MonacoSourceEditor: React.FC<MonacoSourceEditorProps> = ({ content,
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // Only run on mount
+
+    // Expose content extraction and scroll methods via ref
+    React.useEffect(() => {
+        const editor = editorRef.current;
+        if (editor && externalEditorRef) {
+            externalEditorRef.current = {
+                getContent: () => editor.getValue(),
+                getScrollPercentage: () => {
+                    const scrollTop = editor.getScrollTop();
+                    const scrollHeight = editor.getScrollHeight();
+                    const clientHeight = editor.getLayoutInfo().height;
+                    const scrollableHeight = scrollHeight - clientHeight;
+                    if (scrollableHeight <= 0) {
+                        return 0;
+                    }
+                    return scrollTop / scrollableHeight;
+                },
+                setScrollPercentage: (percentage: number) => {
+                    // Wait for content to render before setting scroll position
+                    setTimeout(() => {
+                        const scrollHeight = editor.getScrollHeight();
+                        const clientHeight = editor.getLayoutInfo().height;
+                        const scrollableHeight = scrollHeight - clientHeight;
+                        const newScrollTop = percentage * scrollableHeight;
+                        editor.setScrollTop(newScrollTop);
+                    }, 100);
+                },
+            };
+        }
+        return () => {
+            if (externalEditorRef) {
+                externalEditorRef.current = undefined;
+            }
+        };
+    }, [externalEditorRef]);
 
     // Update content when prop changes
     React.useEffect(() => {
