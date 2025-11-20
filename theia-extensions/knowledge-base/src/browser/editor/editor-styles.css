@@ -331,3 +331,45 @@
 .ProseMirror.resize-cursor {
     cursor: col-resize;
 }
+
+/* Task List Styling */
+.ProseMirror ul[data-type='taskList'] {
+    list-style: none;
+    padding-left: 0;
+    margin: 1em 0;
+}
+
+.ProseMirror ul[data-type='taskList'] li {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 0.5em;
+}
+
+.ProseMirror ul[data-type='taskList'] li > label {
+    flex-shrink: 0;
+    margin-right: 0.5em;
+    user-select: none;
+}
+
+.ProseMirror ul[data-type='taskList'] li > label input[type='checkbox'] {
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+    margin: 2px 0 0 0;
+    accent-color: var(--kb-accent-color, #007acc);
+}
+
+.ProseMirror ul[data-type='taskList'] li > div {
+    flex: 1;
+}
+
+.ProseMirror ul[data-type='taskList'] li[data-checked='true'] > div {
+    text-decoration: line-through;
+    opacity: 0.7;
+}
+
+/* Nested task lists */
+.ProseMirror ul[data-type='taskList'] ul[data-type='taskList'] {
+    margin-left: 1.5em;
+    margin-top: 0.5em;
+}

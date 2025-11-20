@@ -21,6 +21,8 @@ import { Table } from '@tiptap/extension-table';
 import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
+import TaskList from '@tiptap/extension-task-list';
+import TaskItem from '@tiptap/extension-task-item';
 import { defaultMarkdownParser, defaultMarkdownSerializer } from 'prosemirror-markdown';
 import { WikiLink, serializeWikiLinkToMarkdown } from './tiptap-wiki-link';
 import { WikiImage } from './tiptap-wiki-image';
@@ -89,6 +91,7 @@ const FormattingToolbar: React.FC<ToolbarProps> = ({ editor, onRequestLinkTarget
                 />
                 <ToolbarButton onClick={() => editor.chain().focus().toggleBlockquote().run()} isActive={editor.isActive('blockquote')} title="Blockquote" icon="quote" />
                 <ToolbarButton onClick={() => editor.chain().focus().toggleCodeBlock().run()} isActive={editor.isActive('codeBlock')} title="Code Block" icon="symbol-namespace" />
+                <ToolbarButton onClick={() => editor.chain().focus().toggleTaskList().run()} isActive={editor.isActive('taskList')} title="Task List" icon="tasklist" />
             </div>
             <div className="toolbar-separator" />
             <div className="toolbar-group">
@@ -125,6 +128,7 @@ const WIKI_LINK_PLACEHOLDER = '\u0000WIKILINK';
 // GFM table regex for parsing
 const GFM_TABLE_REGEX = /^\|(.+)\|\n\|[-:\s|]+\|\n((?:\|.+\|\n?)+)/gm;
 const TABLE_PLACEHOLDER = '\u0000TABLE';
+const TASK_LIST_PLACEHOLDER = '\u0000TASKLIST';
 
 // Serialize a table node to GFM markdown
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -221,6 +225,64 @@ function parseGfmTable(tableMarkdown: string): object {
     return {
         type: 'table',
         content: rows,
+    };
+}
+
+// Serialize a task list node to markdown
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function serializeTaskListToMarkdown(taskListNode: any): string {
+    const lines: string[] = [];
+
+    if (taskListNode.content) {
+        for (const item of taskListNode.content) {
+            if (item.type === 'taskItem') {
+                const checked = item.attrs?.checked ? 'x' : ' ';
+                let text = '';
+                if (item.content) {
+                    for (const child of item.content) {
+                        if (child.type === 'paragraph' && child.content) {
+                            for (const textNode of child.content) {
+                                if (textNode.text) {
+                                    text += textNode.text;
+                                }
+                            }
+                        }
+                    }
+                }
+                lines.push(`- [${checked}] ${text}`);
+            }
+        }
+    }
+
+    return lines.join('\n');
+}
+
+// Parse task list markdown to TipTap task list JSON
+function parseTaskListMarkdown(taskListMarkdown: string): object {
+    const lines = taskListMarkdown.trim().split('\n');
+    const items: object[] = [];
+
+    for (const line of lines) {
+        const match = line.match(/^\s*-\s+\[([ xX])\]\s+(.*)$/);
+        if (match) {
+            const checked = match[1].toLowerCase() === 'x';
+            const text = match[2];
+            items.push({
+                type: 'taskItem',
+                attrs: { checked },
+                content: [
+                    {
+                        type: 'paragraph',
+                        content: text ? [{ type: 'text', text }] : [],
+                    },
+                ],
+            });
+        }
+    }
+
+    return {
+        type: 'taskList',
+        content: items,
     };
 }
 
@@ -349,15 +411,16 @@ export const TipTapRenderer: React.FC<TipTapRendererProps> = ({
         return json;
     };
 
-    // Serialize ProseMirror doc to markdown with wiki link and table support
+    // Serialize ProseMirror doc to markdown with wiki link, table, and task list support
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const serializeToMarkdown = (doc: any): string => {
         const docJson = doc.toJSON ? doc.toJSON() : doc;
         const tables: string[] = [];
+        const taskLists: string[] = [];
 
-        // Extract and serialize tables first
+        // Extract and serialize tables and task lists first
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const extractTables = (node: any): any => {
+        const extractSpecialNodes = (node: any): any => {
             if (node.type === 'table') {
                 const tableMarkdown = serializeTableToGfm(node);
                 const index = tables.length;
@@ -368,23 +431,38 @@ export const TipTapRenderer: React.FC<TipTapRendererProps> = ({
                     content: [{ type: 'text', text: `${TABLE_PLACEHOLDER}${index}${TABLE_PLACEHOLDER}` }],
                 };
             }
+            if (node.type === 'taskList') {
+                const taskListMarkdown = serializeTaskListToMarkdown(node);
+                const index = taskLists.length;
+                taskLists.push(taskListMarkdown);
+                // Return placeholder paragraph
+                return {
+                    type: 'paragraph',
+                    content: [{ type: 'text', text: `${TASK_LIST_PLACEHOLDER}${index}${TASK_LIST_PLACEHOLDER}` }],
+                };
+            }
             if (node.content) {
                 return {
                     ...node,
-                    content: node.content.map(extractTables),
+                    content: node.content.map(extractSpecialNodes),
                 };
             }
             return node;
         };
 
-        const docWithoutTables = extractTables(docJson);
+        const docWithoutSpecialNodes = extractSpecialNodes(docJson);
 
-        // Serialize with default serializer (tables are now placeholders)
-        let markdown = defaultMarkdownSerializer.serialize(doc.type.schema.nodeFromJSON(docWithoutTables));
+        // Serialize with default serializer (tables and task lists are now placeholders)
+        let markdown = defaultMarkdownSerializer.serialize(doc.type.schema.nodeFromJSON(docWithoutSpecialNodes));
 
         // Restore tables
         tables.forEach((tableMarkdown, index) => {
             markdown = markdown.replace(`${TABLE_PLACEHOLDER}${index}${TABLE_PLACEHOLDER}`, tableMarkdown);
+        });
+
+        // Restore task lists
+        taskLists.forEach((taskListMarkdown, index) => {
+            markdown = markdown.replace(`${TASK_LIST_PLACEHOLDER}${index}${TASK_LIST_PLACEHOLDER}`, taskListMarkdown);
         });
 
         // The wiki link nodes will be serialized as their display text
@@ -423,6 +501,15 @@ export const TipTapRenderer: React.FC<TipTapRendererProps> = ({
             const index = tables.length;
             tables.push(match);
             return `${TABLE_PLACEHOLDER}${index}${TABLE_PLACEHOLDER}`;
+        });
+
+        // Extract and store task lists (groups of consecutive task items)
+        const taskLists: string[] = [];
+        const taskListBlockRegex = /(?:^\s*-\s+\[[ xX]\]\s+.*$\n?)+/gm;
+        processed = processed.replace(taskListBlockRegex, match => {
+            const index = taskLists.length;
+            taskLists.push(match.trim());
+            return `${TASK_LIST_PLACEHOLDER}${index}${TASK_LIST_PLACEHOLDER}\n`;
         });
 
         // Pre-process to extract wiki links
@@ -469,6 +556,37 @@ export const TipTapRenderer: React.FC<TipTapRendererProps> = ({
             json = restoreTables(json);
         }
 
+        // Restore task lists
+        if (taskLists.length > 0) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const restoreTaskLists = (node: any): any => {
+                if (node.type === 'text' && typeof node.text === 'string') {
+                    const taskListMatch = node.text.match(new RegExp(`${TASK_LIST_PLACEHOLDER}(\\d+)${TASK_LIST_PLACEHOLDER}`));
+                    if (taskListMatch) {
+                        const taskListIndex = parseInt(taskListMatch[1], 10);
+                        const taskListMarkdown = taskLists[taskListIndex];
+                        if (taskListMarkdown) {
+                            return parseTaskListMarkdown(taskListMarkdown);
+                        }
+                    }
+                }
+                if (node.content) {
+                    const newContent: unknown[] = [];
+                    for (const child of node.content) {
+                        const result = restoreTaskLists(child);
+                        // If we got a taskList back, it should replace the paragraph
+                        if (result.type === 'taskList' && node.type === 'paragraph') {
+                            return result;
+                        }
+                        newContent.push(result);
+                    }
+                    return { ...node, content: newContent };
+                }
+                return node;
+            };
+            json = restoreTaskLists(json);
+        }
+
         return json;
     };
 
@@ -487,6 +605,10 @@ export const TipTapRenderer: React.FC<TipTapRendererProps> = ({
             TableRow,
             TableHeader,
             TableCell,
+            TaskList,
+            TaskItem.configure({
+                nested: true,
+            }),
             WikiLink.configure({
                 onLinkClick: onWikiLinkClick,
                 onRequestLinkTarget: onRequestLinkTarget,
@@ -502,6 +624,38 @@ export const TipTapRenderer: React.FC<TipTapRendererProps> = ({
         editorProps: {
             attributes: {
                 class: 'quallaa-tiptap-instance',
+            },
+            handleDrop: (view, event, slice, moved) => {
+                // Check if there are files in the drop
+                if (!moved && event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length > 0) {
+                    const files = event.dataTransfer.files;
+
+                    // Filter for image files only
+                    const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+
+                    if (imageFiles.length > 0) {
+                        event.preventDefault();
+
+                        // Process each image file
+                        imageFiles.forEach(file => {
+                            const reader = new FileReader();
+                            reader.onload = readerEvent => {
+                                const dataUrl = readerEvent.target?.result as string;
+                                if (dataUrl && editor) {
+                                    // Insert the image at the drop position
+                                    const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
+                                    if (coords) {
+                                        editor.chain().focus().setTextSelection(coords.pos).insertWikiImage(dataUrl, file.name).run();
+                                    }
+                                }
+                            };
+                            reader.readAsDataURL(file);
+                        });
+
+                        return true; // Handled
+                    }
+                }
+                return false; // Not handled
             },
         },
         onUpdate: ({ editor: currentEditor }) => {
