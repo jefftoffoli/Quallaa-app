@@ -18,7 +18,8 @@
         "obsidian",
         "kb-view"
     ],
-    "dependencies": {
+    "dependencies": {},
+    "peerDependencies": {
         "@theia/core": "1.66.1",
         "@theia/editor": "1.66.1",
         "@theia/filesystem": "1.66.1",

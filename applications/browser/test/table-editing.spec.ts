@@ -14,11 +14,18 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Table Editing - User Journey', () => {
     test.beforeEach(async ({ page }) => {
+        // Capture console output for debugging
+        page.on('console', msg => console.log('BROWSER:', msg.type(), msg.text()));
+        page.on('pageerror', error => console.log('PAGE ERROR:', error.message));
+
         // Navigate to the application
         await page.goto('http://localhost:3000');
 
         // Wait for the application to be ready
-        await page.waitForSelector('.theia-ApplicationShell', { timeout: 30000 });
+        await page.waitForSelector('.theia-ApplicationShell', { timeout: 60000 });
+
+        // Give the application time to initialize
+        await page.waitForTimeout(3000);
 
         // Create a new test file
         await page.keyboard.press('Meta+Shift+p');
