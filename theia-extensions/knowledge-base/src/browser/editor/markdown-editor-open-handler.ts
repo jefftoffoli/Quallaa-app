@@ -50,10 +50,9 @@ export class MarkdownEditorOpenHandler implements OpenHandler {
         // Ensure widget has a valid ID before adding to shell
         // The widget manager should assign this, but we verify it exists
         if (!widget.id || widget.id === '') {
-            // Fallback: create unique ID from factory ID and URI
-            const encodedUri = encodeURIComponent(uri.toString());
+            // Fallback: use the factory ID (tab selectors expect this exact ID)
             Object.defineProperty(widget, 'id', {
-                value: `${MarkdownEditorWidget.ID}:${encodedUri}`,
+                value: MarkdownEditorWidget.ID,
                 writable: true,
                 configurable: true,
             });
