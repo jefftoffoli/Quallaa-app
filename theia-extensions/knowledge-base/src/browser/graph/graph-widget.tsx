@@ -57,6 +57,9 @@ export class GraphWidget extends BaseWidget {
     private graphData: GraphData | undefined;
     private simulation: d3.Simulation<SimulationNode, SimulationLink> | undefined;
     private svg: d3.Selection<SVGSVGElement, unknown, null, undefined> | undefined;
+    private container: HTMLDivElement | undefined;
+    private svgElement: SVGSVGElement | undefined;
+    private mainGroup: d3.Selection<SVGGElement, unknown, null, undefined> | undefined;
 
     constructor() {
         super();
@@ -104,33 +107,35 @@ export class GraphWidget extends BaseWidget {
     }
 
     protected render(): void {
-        this.node.innerHTML = '';
+        // Initialize container on first render only
+        if (!this.container) {
+            this.container = document.createElement('div');
+            this.container.className = 'graph-container';
+            this.node.appendChild(this.container);
+        }
 
+        // Handle loading/empty states
         if (!this.graphData) {
-            const loadingMsg = document.createElement('div');
-            loadingMsg.className = 'theia-widget-noInfo';
-            loadingMsg.textContent = 'Loading knowledge graph...';
-            this.node.appendChild(loadingMsg);
+            this.container.innerHTML = '<div class="theia-widget-noInfo">Loading knowledge graph...</div>';
             return;
         }
 
         if (this.graphData.nodes.length === 0) {
-            const emptyMsg = document.createElement('div');
-            emptyMsg.className = 'theia-widget-noInfo';
-            emptyMsg.textContent = 'No notes in workspace';
-            this.node.appendChild(emptyMsg);
+            this.container.innerHTML = '<div class="theia-widget-noInfo">No notes in workspace</div>';
             return;
         }
 
-        // Create container
-        const container = document.createElement('div');
-        container.className = 'graph-container';
-
-        // Add summary header
-        const summary = document.createElement('div');
-        summary.className = 'graph-summary';
+        // Update or create summary header
         const noteNodes = this.graphData.nodes.filter(n => n.type === 'note');
         const placeholderNodes = this.graphData.nodes.filter(n => n.type === 'placeholder');
+
+        let summary = this.container.querySelector('.graph-summary') as HTMLDivElement;
+        if (!summary) {
+            summary = document.createElement('div');
+            summary.className = 'graph-summary';
+            this.container.appendChild(summary);
+        }
+
         summary.innerHTML = `
             <div class="graph-stats">
                 <span class="stat-item"><span class="codicon codicon-file"></span> ${noteNodes.length} notes</span>
@@ -138,19 +143,18 @@ export class GraphWidget extends BaseWidget {
                 ${placeholderNodes.length > 0 ? `<span class="stat-item"><span class="codicon codicon-warning"></span> ${placeholderNodes.length} unresolved</span>` : ''}
             </div>
         `;
-        container.appendChild(summary);
 
-        // Create SVG element
-        const svgElement = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        svgElement.setAttribute('class', 'graph-svg');
-        svgElement.setAttribute('width', '100%');
-        svgElement.setAttribute('height', '100%');
-        container.appendChild(svgElement);
+        // Create or reuse SVG element
+        if (!this.svgElement) {
+            this.svgElement = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            this.svgElement.setAttribute('class', 'graph-svg');
+            this.svgElement.setAttribute('width', '100%');
+            this.svgElement.setAttribute('height', '100%');
+            this.container.appendChild(this.svgElement);
+        }
 
-        this.node.appendChild(container);
-
-        // Build D3 graph
-        this.buildD3Graph(svgElement);
+        // Build/update D3 graph
+        this.buildD3Graph(this.svgElement);
     }
 
     private buildD3Graph(svgElement: SVGSVGElement): void {
@@ -163,54 +167,91 @@ export class GraphWidget extends BaseWidget {
         const width = rect.width || 800;
         const height = rect.height || 600;
 
-        // Clear any existing SVG content
-        this.svg = d3.select(svgElement);
-        this.svg.selectAll('*').remove();
+        // Initialize SVG selection on first call
+        if (!this.svg) {
+            this.svg = d3.select(svgElement);
+
+            // Create zoom behavior (only once)
+            const zoom = d3
+                .zoom<SVGSVGElement, unknown>()
+                .scaleExtent([0.1, 4])
+                .on('zoom', event => {
+                    if (this.mainGroup) {
+                        this.mainGroup.attr('transform', event.transform);
+                    }
+                });
+
+            this.svg.call(zoom);
+
+            // Create main group for zoom/pan (only once)
+            this.mainGroup = this.svg.append('g');
+        }
 
         // Clone nodes to avoid mutating original data
         const nodes: SimulationNode[] = this.graphData.nodes.map(n => ({ ...n }));
         const links: SimulationLink[] = this.graphData.links.map(l => ({ ...l }));
 
-        // Create zoom behavior
-        const zoom = d3.zoom<SVGSVGElement, unknown>()
-            .scaleExtent([0.1, 4])
-            .on('zoom', event => {
-                g.attr('transform', event.transform);
-            });
+        const g = this.mainGroup!;
 
-        this.svg.call(zoom);
+        // Create or update force simulation
+        if (!this.simulation) {
+            this.simulation = d3
+                .forceSimulation<SimulationNode, SimulationLink>(nodes)
+                .force(
+                    'link',
+                    d3
+                        .forceLink<SimulationNode, SimulationLink>(links)
+                        .id(d => d.id)
+                        .distance(100)
+                )
+                .force('charge', d3.forceManyBody().strength(-300))
+                .force('center', d3.forceCenter(width / 2, height / 2))
+                .force('collide', d3.forceCollide().radius(30));
+        } else {
+            // Update existing simulation with new data
+            this.simulation.nodes(nodes);
+            const linkForce = this.simulation.force('link') as d3.ForceLink<SimulationNode, SimulationLink>;
+            if (linkForce) {
+                linkForce.links(links);
+            }
+            this.simulation.alpha(0.3).restart();
+        }
 
-        // Create main group for zoom/pan
-        const g = this.svg.append('g');
+        // Create arrow marker defs only once
+        let defs = g.select('defs');
+        if (defs.empty()) {
+            defs = g.append('defs');
+            defs.append('marker')
+                .attr('id', 'arrowhead')
+                .attr('viewBox', '0 -5 10 10')
+                .attr('refX', 20)
+                .attr('refY', 0)
+                .attr('markerWidth', 6)
+                .attr('markerHeight', 6)
+                .attr('orient', 'auto')
+                .append('path')
+                .attr('d', 'M0,-5L10,0L0,5')
+                .attr('fill', 'var(--theia-editorWidget-foreground)');
+        }
 
-        // Create force simulation
-        this.simulation = d3.forceSimulation<SimulationNode, SimulationLink>(nodes)
-            .force('link', d3.forceLink<SimulationNode, SimulationLink>(links)
-                .id(d => d.id)
-                .distance(100))
-            .force('charge', d3.forceManyBody().strength(-300))
-            .force('center', d3.forceCenter(width / 2, height / 2))
-            .force('collide', d3.forceCollide().radius(30));
+        // Get or create links group
+        let linksGroup = g.select('g.links');
+        if (linksGroup.empty()) {
+            linksGroup = g.append('g').attr('class', 'links');
+        }
 
-        // Create arrow markers for directed edges
-        const defs = g.append('defs');
-        defs.append('marker')
-            .attr('id', 'arrowhead')
-            .attr('viewBox', '0 -5 10 10')
-            .attr('refX', 20)
-            .attr('refY', 0)
-            .attr('markerWidth', 6)
-            .attr('markerHeight', 6)
-            .attr('orient', 'auto')
-            .append('path')
-            .attr('d', 'M0,-5L10,0L0,5')
-            .attr('fill', 'var(--theia-editorWidget-foreground)');
+        // DATA JOIN for links (enter/update/exit pattern)
+        const link = linksGroup.selectAll<SVGLineElement, SimulationLink>('line').data(links, (d: SimulationLink) => {
+            const source = typeof d.source === 'string' ? d.source : d.source.id;
+            const target = typeof d.target === 'string' ? d.target : d.target.id;
+            return `${source}-${target}`;
+        });
 
-        // Create links
-        const link = g.append('g')
-            .attr('class', 'links')
-            .selectAll('line')
-            .data(links)
+        // EXIT: Remove old links
+        link.exit().remove();
+
+        // ENTER: Add new links
+        const linkEnter = link
             .enter()
             .append('line')
             .attr('class', 'graph-link')
@@ -219,58 +260,75 @@ export class GraphWidget extends BaseWidget {
             .attr('stroke-width', 2)
             .attr('marker-end', 'url(#arrowhead)');
 
-        // Create nodes
-        const node = g.append('g')
-            .attr('class', 'nodes')
-            .selectAll('g')
-            .data(nodes)
+        // MERGE: Combine enter + update
+        const linkMerged = linkEnter.merge(link);
+
+        // Get or create nodes group
+        let nodesGroup = g.select('g.nodes');
+        if (nodesGroup.empty()) {
+            nodesGroup = g.append('g').attr('class', 'nodes');
+        }
+
+        // DATA JOIN for nodes (enter/update/exit pattern)
+        const node = nodesGroup.selectAll<SVGGElement, SimulationNode>('g').data(nodes, (d: SimulationNode) => d.id);
+
+        // EXIT: Remove old nodes
+        node.exit().remove();
+
+        // ENTER: Add new nodes
+        const nodeEnter = node
             .enter()
             .append('g')
             .attr('class', d => `graph-node ${d.type}`)
             .call(this.createDragBehavior());
 
-        // Add circles for nodes
-        node.append('circle')
-            .attr('r', d => this.getNodeRadius(d))
-            .attr('fill', d => this.getNodeColor(d))
-            .attr('stroke', 'var(--theia-editor-background)')
-            .attr('stroke-width', 2);
+        // Add circles to new nodes
+        nodeEnter.append('circle').attr('stroke', 'var(--theia-editor-background)').attr('stroke-width', 2);
 
-        // Add labels
-        node.append('text')
+        // Add labels to new nodes
+        nodeEnter
+            .append('text')
             .attr('class', 'graph-node-label')
             .attr('dx', 12)
             .attr('dy', 4)
-            .text(d => d.label)
             .attr('fill', 'var(--theia-editorWidget-foreground)')
             .style('font-size', '12px')
             .style('pointer-events', 'none');
 
-        // Add click handler
-        node.on('click', (event, d) => {
+        // Add interaction handlers to new nodes
+        nodeEnter.on('click', (event, d) => {
             event.stopPropagation();
             this.openNode(d);
         });
 
-        // Add hover effect
-        node.on('mouseenter', function (this: Element): void {
-            d3.select(this).select('circle')
-                .attr('stroke-width', 3);
+        nodeEnter.on('mouseenter', function (this: Element): void {
+            d3.select(this).select('circle').attr('stroke-width', 3);
         });
-        node.on('mouseleave', function (this: Element): void {
-            d3.select(this).select('circle')
-                .attr('stroke-width', 2);
+
+        nodeEnter.on('mouseleave', function (this: Element): void {
+            d3.select(this).select('circle').attr('stroke-width', 2);
         });
+
+        // MERGE: Combine enter + update
+        const nodeMerged = nodeEnter.merge(node);
+
+        // UPDATE: Update attributes for all nodes (new + existing)
+        nodeMerged
+            .select('circle')
+            .attr('r', d => this.getNodeRadius(d))
+            .attr('fill', d => this.getNodeColor(d));
+
+        nodeMerged.select('text').text(d => d.label);
 
         // Update positions on simulation tick
         this.simulation.on('tick', () => {
-            link
+            linkMerged
                 .attr('x1', d => (d.source as SimulationNode).x!)
                 .attr('y1', d => (d.source as SimulationNode).y!)
                 .attr('x2', d => (d.target as SimulationNode).x!)
                 .attr('y2', d => (d.target as SimulationNode).y!);
 
-            node.attr('transform', d => `translate(${d.x},${d.y})`);
+            nodeMerged.attr('transform', d => `translate(${d.x},${d.y})`);
         });
     }
 
@@ -296,10 +354,7 @@ export class GraphWidget extends BaseWidget {
             d.fy = undefined;
         };
 
-        return d3.drag<Element, SimulationNode, SimulationNode>()
-            .on('start', dragStarted)
-            .on('drag', dragged)
-            .on('end', dragEnded);
+        return d3.drag<Element, SimulationNode, SimulationNode>().on('start', dragStarted).on('drag', dragged).on('end', dragEnded);
     }
 
     private getNodeRadius(node: SimulationNode): number {
@@ -307,9 +362,7 @@ export class GraphWidget extends BaseWidget {
             return 8;
         }
         // Calculate degree (number of connections)
-        const degree = this.graphData.links.filter(
-            l => l.source === node.id || l.target === node.id
-        ).length;
+        const degree = this.graphData.links.filter(l => l.source === node.id || l.target === node.id).length;
         // More connections = bigger node
         return 8 + Math.sqrt(degree) * 3;
     }
