@@ -685,6 +685,63 @@ export const TipTapRenderer: React.FC<TipTapRendererProps> = ({
                 }
                 return false; // Not handled
             },
+            handlePaste: (view, event, slice) => {
+                // Check if clipboard contains files
+                if (event.clipboardData && event.clipboardData.files && event.clipboardData.files.length > 0) {
+                    const files = event.clipboardData.files;
+
+                    // Filter for image files only
+                    const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+
+                    if (imageFiles.length > 0) {
+                        event.preventDefault();
+
+                        // Process each image file
+                        imageFiles.forEach(file => {
+                            const reader = new FileReader();
+                            reader.onload = readerEvent => {
+                                const dataUrl = readerEvent.target?.result as string;
+                                if (dataUrl && editor) {
+                                    // Insert the image at current cursor position
+                                    editor.chain().focus().insertWikiImage(dataUrl, file.name).run();
+                                }
+                            };
+                            reader.readAsDataURL(file);
+                        });
+
+                        return true; // Handled
+                    }
+                }
+
+                // Check if clipboard contains HTML with images
+                if (event.clipboardData && event.clipboardData.types.includes('text/html')) {
+                    const html = event.clipboardData.getData('text/html');
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = html;
+                    const images = tempDiv.querySelectorAll('img');
+
+                    if (images.length > 0) {
+                        event.preventDefault();
+
+                        // Extract images from HTML
+                        images.forEach(img => {
+                            const src = img.src;
+                            // Handle data URLs (embedded images)
+                            if (src.startsWith('data:image/')) {
+                                if (editor) {
+                                    const fileName = img.alt || 'pasted-image.png';
+                                    editor.chain().focus().insertWikiImage(src, fileName).run();
+                                }
+                            }
+                            // TODO: Handle external URLs - could download and convert to data URL
+                        });
+
+                        return true; // Handled
+                    }
+                }
+
+                return false; // Not handled
+            },
         },
         onUpdate: ({ editor: currentEditor }) => {
             if (onChange) {
