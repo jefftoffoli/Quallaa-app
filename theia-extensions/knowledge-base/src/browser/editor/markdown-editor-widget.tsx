@@ -26,6 +26,7 @@ import { Widget, OpenerService } from '@theia/core/lib/browser';
 import { FileService } from '@theia/filesystem/lib/browser/file-service';
 import { KnowledgeBaseService } from '../../common/knowledge-base-protocol';
 import { QuickInputService } from '@theia/core/lib/browser/quick-input';
+import { MonacoEditorProvider } from '@theia/monaco/lib/browser/monaco-editor-provider';
 
 @injectable()
 export class MarkdownEditorWidget extends ReactWidget implements Saveable, SaveableSource {
@@ -46,6 +47,9 @@ export class MarkdownEditorWidget extends ReactWidget implements Saveable, Savea
 
     @inject(QuickInputService)
     protected readonly quickInputService: QuickInputService;
+
+    @inject(MonacoEditorProvider)
+    protected readonly editorProvider: MonacoEditorProvider;
 
     protected uri: URI | undefined;
     protected content: string = '';
@@ -331,6 +335,8 @@ export class MarkdownEditorWidget extends ReactWidget implements Saveable, Savea
                         <MonacoSourceEditor
                             content={this.content}
                             onChange={this.handleContentChange}
+                            editorProvider={this.editorProvider}
+                            uri={this.uri!}
                             editorRef={
                                 this.monacoEditorRef as React.MutableRefObject<
                                     | {

@@ -15,14 +15,19 @@
  ********************************************************************************/
 
 import * as React from '@theia/core/shared/react';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import * as monaco from '@theia/monaco-editor-core';
+import { URI } from '@theia/core/lib/common/uri';
+import { MonacoEditorProvider } from '@theia/monaco/lib/browser/monaco-editor-provider';
+import { SimpleMonacoEditor } from '@theia/monaco/lib/browser/simple-monaco-editor';
 
 export interface MonacoSourceEditorProps {
     /** The markdown content to display */
     content: string;
     /** Called when content changes */
     onChange: (value: string) => void;
+    /** Theia's Monaco editor provider for LSP integration */
+    editorProvider: MonacoEditorProvider;
+    /** URI of the file being edited */
+    uri: URI;
     /** Whether the editor is read-only */
     readOnly?: boolean;
     /** Ref to expose content extraction and scroll methods */
@@ -31,62 +36,74 @@ export interface MonacoSourceEditorProps {
 
 /**
  * Monaco-based source editor for markdown files.
- * Provides syntax highlighting, line numbers, and a consistent editing experience.
+ * Uses Theia's MonacoEditorProvider for full LSP integration (autocomplete, diagnostics, etc.)
  */
-export const MonacoSourceEditor: React.FC<MonacoSourceEditorProps> = ({ content, onChange, readOnly = false, editorRef: externalEditorRef }) => {
+export const MonacoSourceEditor: React.FC<MonacoSourceEditorProps> = ({ content, onChange, editorProvider, uri, readOnly = false, editorRef: externalEditorRef }) => {
     // eslint-disable-next-line no-null/no-null
     const containerRef = React.useRef<HTMLDivElement>(null);
-    const editorRef = React.useRef<monaco.editor.IStandaloneCodeEditor | undefined>(undefined);
+    const editorRef = React.useRef<SimpleMonacoEditor | undefined>(undefined);
     const isUpdatingRef = React.useRef(false);
 
-    // Initialize Monaco editor on mount
+    // Initialize Monaco editor on mount using Theia's provider for LSP support
     React.useEffect(() => {
         if (!containerRef.current) {
             return;
         }
 
-        // Create the Monaco editor instance
-        const editor = monaco.editor.create(containerRef.current, {
-            value: content,
-            language: 'markdown',
-            theme: 'vs-dark', // Will be overridden by Theia's theme
-            automaticLayout: true,
-            minimap: { enabled: false },
-            lineNumbers: 'on',
-            wordWrap: 'on',
-            wrappingStrategy: 'advanced',
-            scrollBeyondLastLine: false,
-            fontSize: 14,
-            fontFamily: 'var(--monaco-monospace-font)',
-            lineHeight: 22,
-            padding: { top: 16, bottom: 16 },
-            readOnly: readOnly,
-            renderLineHighlight: 'line',
-            scrollbar: {
-                verticalScrollbarSize: 10,
-                horizontalScrollbarSize: 10,
-            },
-            // Markdown-specific settings
-            quickSuggestions: false,
-            parameterHints: { enabled: false },
-            suggestOnTriggerCharacters: false,
-        });
+        let disposed = false;
+        const initEditor = async () => {
+            // Create SimpleMonacoEditor with full Theia integration (LSP, theming, etc.)
+            const editor = await editorProvider.createSimpleInline(uri, containerRef.current!, {
+                language: 'markdown',
+                automaticLayout: true,
+                autoSizing: false,
+                minHeight: -1,
+                maxHeight: -1,
+                minimap: { enabled: false },
+                lineNumbers: 'on',
+                wordWrap: 'on',
+                wrappingStrategy: 'advanced',
+                scrollBeyondLastLine: false,
+                fontSize: 14,
+                fontFamily: 'var(--monaco-monospace-font)',
+                lineHeight: 22,
+                padding: { top: 16, bottom: 16 },
+                readOnly: readOnly,
+                renderLineHighlight: 'line',
+                scrollbar: {
+                    verticalScrollbarSize: 10,
+                    horizontalScrollbarSize: 10,
+                },
+            });
 
-        editorRef.current = editor;
-
-        // Handle content changes
-        const disposable = editor.onDidChangeModelContent(() => {
-            if (!isUpdatingRef.current) {
-                const newValue = editor.getValue();
-                onChange(newValue);
+            if (disposed) {
+                editor.dispose();
+                return;
             }
-        });
+
+            editorRef.current = editor;
+
+            // Set initial content
+            editor.document.textEditorModel.setValue(content);
+
+            // Handle content changes
+            editor.getControl().onDidChangeModelContent(() => {
+                if (!isUpdatingRef.current) {
+                    const newValue = editor.getControl().getValue();
+                    onChange(newValue);
+                }
+            });
+        };
+
+        initEditor();
 
         // Cleanup on unmount
         return () => {
-            disposable.dispose();
-            editor.dispose();
-            editorRef.current = undefined;
+            disposed = true;
+            if (editorRef.current) {
+                editorRef.current.dispose();
+                editorRef.current = undefined;
+            }
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // Only run on mount
@@ -95,12 +112,13 @@ export const MonacoSourceEditor: React.FC<MonacoSourceEditorProps> = ({ content,
     React.useEffect(() => {
         const editor = editorRef.current;
         if (editor && externalEditorRef) {
+            const control = editor.getControl();
             externalEditorRef.current = {
-                getContent: () => editor.getValue(),
+                getContent: () => control.getValue(),
                 getScrollPercentage: () => {
-                    const scrollTop = editor.getScrollTop();
-                    const scrollHeight = editor.getScrollHeight();
-                    const clientHeight = editor.getLayoutInfo().height;
+                    const scrollTop = control.getScrollTop();
+                    const scrollHeight = control.getScrollHeight();
+                    const clientHeight = control.getLayoutInfo().height;
                     const scrollableHeight = scrollHeight - clientHeight;
                     if (scrollableHeight <= 0) {
                         return 0;
@@ -110,11 +128,11 @@ export const MonacoSourceEditor: React.FC<MonacoSourceEditorProps> = ({ content,
                 setScrollPercentage: (percentage: number) => {
                     // Wait for content to render before setting scroll position
                     setTimeout(() => {
-                        const scrollHeight = editor.getScrollHeight();
-                        const clientHeight = editor.getLayoutInfo().height;
+                        const scrollHeight = control.getScrollHeight();
+                        const clientHeight = control.getLayoutInfo().height;
                         const scrollableHeight = scrollHeight - clientHeight;
                         const newScrollTop = percentage * scrollableHeight;
-                        editor.setScrollTop(newScrollTop);
+                        control.setScrollTop(newScrollTop);
                     }, 100);
                 },
             };
@@ -130,23 +148,24 @@ export const MonacoSourceEditor: React.FC<MonacoSourceEditorProps> = ({ content,
     React.useEffect(() => {
         const editor = editorRef.current;
         if (editor) {
-            const currentValue = editor.getValue();
+            const control = editor.getControl();
+            const currentValue = control.getValue();
             if (content !== currentValue) {
                 // Prevent onChange from firing during external updates
                 isUpdatingRef.current = true;
 
                 // Preserve cursor position
-                const position = editor.getPosition();
-                const selection = editor.getSelection();
+                const position = control.getPosition();
+                const selection = control.getSelection();
 
-                editor.setValue(content);
+                control.setValue(content);
 
                 // Restore cursor position
                 if (position) {
-                    editor.setPosition(position);
+                    control.setPosition(position);
                 }
                 if (selection) {
-                    editor.setSelection(selection);
+                    control.setSelection(selection);
                 }
 
                 isUpdatingRef.current = false;
@@ -158,7 +177,7 @@ export const MonacoSourceEditor: React.FC<MonacoSourceEditorProps> = ({ content,
     React.useEffect(() => {
         const editor = editorRef.current;
         if (editor) {
-            editor.updateOptions({ readOnly });
+            editor.getControl().updateOptions({ readOnly });
         }
     }, [readOnly]);
 
