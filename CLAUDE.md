@@ -17,6 +17,16 @@
 - Quallaa assumes you're building a knowledge base that happens to be executable
 - Think Obsidian meets VS Code
 
+**Design Principles (LLM-Native):**
+
+- **No scaffolding templates** - LLMs can generate contextual content on demand;
+  static templates add complexity without value
+- **Declarative structures only for integrations** - Use templates/schemas only
+  when external systems require specific formats (GitHub Issue templates, CI
+  configs, API contracts)
+- **Prefer runtime generation over static patterns** - If an LLM can produce it
+  contextually, don't hardcode it
+
 **Target Users:**
 
 - Natural language developers who think in markdown
@@ -63,7 +73,7 @@ This is fundamentally different from a typical Theia extension.
 
 **Main Extensions:**
 
-- `knowledge-base/` - Wiki links, backlinks, graph, tags, templates, daily notes
+- `knowledge-base/` - Wiki links, backlinks, graph, tags, daily notes
 - `kb-view/` - Mode system, state management, widget management
 - `product/` - Branding, Getting Started widget
 
@@ -84,7 +94,6 @@ The **crown jewel** of Quallaa - comprehensive knowledge management features.
 - Knowledge Graph: D3.js force-directed visualization
 - Tags Browser: Hierarchical tags with counts
 - Daily Notes: Date-based note creation
-- Templates: 5 built-in, 13 variables
 
 **Backend Architecture:**
 

@@ -41,7 +41,6 @@ import { GraphWidget, GRAPH_WIDGET_ID } from './graph/graph-widget';
 import { GraphContribution } from './graph/graph-contribution';
 import { TagsWidget, TAGS_WIDGET_ID } from './tags/tags-widget';
 import { TagsContribution } from './tags/tags-contribution';
-import { TemplateContribution } from './templates/template-contribution';
 import { MarkdownEditorWidget } from './editor/markdown-editor-widget';
 import { MarkdownEditorOpenHandler } from './editor/markdown-editor-open-handler';
 
@@ -102,10 +101,6 @@ export default new ContainerModule(bind => {
     bind(CommandContribution).toService(TagsContribution);
     bind(MenuContribution).toService(TagsContribution);
 
-    // Note Templates - following Foam's templates pattern
-    bind(TemplateContribution).toSelf().inSingletonScope();
-    bind(CommandContribution).toService(TemplateContribution);
-
     // Connect to backend service via JSON-RPC
     bind(KnowledgeBaseService)
         .toDynamicValue(ctx => {
@@ -120,17 +115,19 @@ export default new ContainerModule(bind => {
     bind(MarkdownEditorWidget).toSelf();
 
     // Bind the Widget Factory
-    bind(WidgetFactory).toDynamicValue(context => ({
-        id: MarkdownEditorWidget.ID,
-        createWidget: (options: { uri?: string }) => {
-            const widget = context.container.get(MarkdownEditorWidget);
-            // If URI was passed in options, set it
-            if (options && options.uri) {
-                widget.setUri(new URI(options.uri));
-            }
-            return widget;
-        }
-    })).inSingletonScope();
+    bind(WidgetFactory)
+        .toDynamicValue(context => ({
+            id: MarkdownEditorWidget.ID,
+            createWidget: (options: { uri?: string }) => {
+                const widget = context.container.get(MarkdownEditorWidget);
+                // If URI was passed in options, set it
+                if (options && options.uri) {
+                    widget.setUri(new URI(options.uri));
+                }
+                return widget;
+            },
+        }))
+        .inSingletonScope();
 
     // Bind the Open Handler
     bind(MarkdownEditorOpenHandler).toSelf().inSingletonScope();
