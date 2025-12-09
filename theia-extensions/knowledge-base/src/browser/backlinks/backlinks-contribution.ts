@@ -19,7 +19,6 @@
  * Following Foam's connections panel pattern
  */
 
-import { injectable } from '@theia/core/shared/inversify';
 import { AbstractViewContribution } from '@theia/core/lib/browser';
 import { Command, CommandRegistry } from '@theia/core/lib/common/command';
 import { BacklinksWidget, BACKLINKS_WIDGET_ID } from './backlinks-widget';
@@ -29,7 +28,7 @@ export const TOGGLE_BACKLINKS_COMMAND: Command = {
     label: 'Toggle Backlinks Panel',
 };
 
-@injectable()
+// Note: Do NOT add @injectable() here - parent AbstractViewContribution is already decorated
 export class BacklinksContribution extends AbstractViewContribution<BacklinksWidget> {
     constructor() {
         super({

@@ -19,7 +19,6 @@
  * Registers commands, menu items, and keybindings for the tags widget
  */
 
-import { injectable } from '@theia/core/shared/inversify';
 import { AbstractViewContribution } from '@theia/core/lib/browser';
 import { Command, CommandRegistry } from '@theia/core/lib/common/command';
 import { TAGS_WIDGET_ID, TagsWidget } from './tags-widget';
@@ -34,7 +33,7 @@ export const REFRESH_TAGS_COMMAND: Command = {
     label: 'Refresh Tags',
 };
 
-@injectable()
+// Note: Do NOT add @injectable() here - parent AbstractViewContribution is already decorated
 export class TagsContribution extends AbstractViewContribution<TagsWidget> {
     constructor() {
         super({

@@ -19,14 +19,14 @@ import * as React from 'react';
 
 import { Message } from '@theia/core/lib/browser';
 import { PreferenceService } from '@theia/core/lib/common';
-import { inject, injectable } from '@theia/core/shared/inversify';
+import { inject } from '@theia/core/shared/inversify';
 import { CommandRegistry } from '@theia/core/lib/common/command';
 
 import { GettingStartedWidget } from '@theia/getting-started/lib/browser/getting-started-widget';
 import { VSXEnvironment } from '@theia/vsx-registry/lib/common/vsx-environment';
 import { WindowService } from '@theia/core/lib/browser/window/window-service';
 
-@injectable()
+// Note: Do NOT add @injectable() here - parent GettingStartedWidget is already decorated
 export class TheiaIDEGettingStartedWidget extends GettingStartedWidget {
     @inject(VSXEnvironment)
     protected readonly environment: VSXEnvironment;
