@@ -114,6 +114,8 @@ Requirements:
 
 Development build (faster, uses less resources):
 
+NOTE: If manually building after updating dependencies or pulling to a newer commit, run `git clean -xfd` to help avoid runtime conflicts.
+
 ```sh
 yarn && yarn build:dev && yarn download:plugins
 ```
